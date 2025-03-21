@@ -239,6 +239,7 @@ const cardCatalog = {
         { name: "Life Leech", attack: 2, defense: 6, speed: 6, class: "Pumper", effect: "Heals itself for 1 when pumping." }
     ],
     spells: [
+        /* Commented out spells for now, as requested
         { name: "Power Surge", effect: "Gives a friendly Monster card +3 Attack for one turn." },
         { name: "Healing Wave", effect: "Heals all friendly Monster cards for 2 Defense." },
         { name: "Blinding Flash", effect: "Reduces the Attack of all enemy Monster cards by 2 for one turn." },
@@ -254,6 +255,7 @@ const cardCatalog = {
         { name: "Sacrificial Ritual", effect: "Destroy a friendly Monster card to deal its Attack as direct damage to the opponent." },
         { name: "Mind Control", effect: "Take control of an enemy Monster card with 3 or less Attack for one turn." },
         { name: "Elemental Shift", effect: "Swap the Attack and Defense values of a friendly Monster card for one turn." }
+        */
     ]
 };
 
@@ -273,7 +275,9 @@ const gameState = {
             champion: null,
             board: [null, null, null], // Carte mostri sul campo
             spells: [null, null, null], // Carte magia sul campo
-            selectedActions: [null, null, null] // Azioni selezionate per ogni mostro
+            selectedActions: [null, null, null], // Azioni selezionate per ogni mostro
+            defendersOnCooldown: [false, false, false], // Defender in cooldown che non possono difendere questo turno
+            monstersHaveFought: [false, false, false] // Mostri che hanno già combattuto e non possono essere sostituiti
         },
         { // Player 2
             deck: [],
@@ -283,7 +287,9 @@ const gameState = {
             champion: null,
             board: [null, null, null], // Carte mostri sul campo
             spells: [null, null, null], // Carte magia sul campo
-            selectedActions: [null, null, null] // Azioni selezionate per ogni mostro
+            selectedActions: [null, null, null], // Azioni selezionate per ogni mostro
+            defendersOnCooldown: [false, false, false], // Defender in cooldown che non possono difendere questo turno
+            monstersHaveFought: [false, false, false] // Mostri che hanno già combattuto e non possono essere sostituiti
         }
     ],
     pendingActions: [], // Azioni in attesa per la Battle Phase
@@ -754,7 +760,7 @@ const gameState = {
     enterStrategyPhase: function () {
         logGameEvent('Entering Strategy Phase - Both players select their actions simultaneously');
         this.currentPhase = PHASES.STRATEGY;
-        this.timeRemaining = 30; // Reset del timer a 30 secondi
+        this.timeRemaining = 45; // Increased from 30 to 45 seconds
         this.updateUI();
 
         showNotification('Strategy Phase - Both players place cards and select actions simultaneously', 'info');
@@ -780,6 +786,32 @@ const gameState = {
         this.startStrategyTimer();
     },
 
+    // Traccia stato dei difensori per impedire la difesa in turni consecutivi
+    resetDefenderStates: function () {
+        // Per ogni giocatore
+        for (let player = 0; player < 2; player++) {
+            // Se non esiste l'array per tracciare i difensori, crealo
+            if (!this.players[player].defendersDefendedLastTurn) {
+                this.players[player].defendersDefendedLastTurn = [false, false, false];
+            }
+
+            // Resetta gli stati di difesa solo se necessario
+            const currentActions = this.players[player].selectedActions;
+
+            for (let i = 0; i < 3; i++) {
+                // Se il mostro NON ha difeso in questo turno, rimuovi il blocco del turno precedente
+                if (currentActions[i] !== ACTION_TYPES.DEFEND) {
+                    this.players[player].defendersDefendedLastTurn[i] = false;
+                }
+
+                // Se ha difeso, il flag è già stato impostato in executeDefend
+            }
+        }
+
+        // Debug log dello stato dei difensori dopo il reset
+        logGameEvent(`Defender states after reset - Player 1: [${this.players[0].defendersDefendedLastTurn}], Player 2: [${this.players[1].defendersDefendedLastTurn}]`);
+    },
+
     // Esegui il turno del computer (Player 2)
     executeComputerTurn: function () {
         logGameEvent('Computer is making decisions...');
@@ -802,8 +834,11 @@ const gameState = {
         // Ottieni la mano del computer
         const computerHand = this.players[PLAYERS.PLAYER2].hand;
 
-        // Posiziona mostri nelle posizioni vuote
+        // Posiziona mostri nelle posizioni vuote, ma non nella champion lane
         for (let position = 0; position < 3; position++) {
+            // Salta la posizione centrale (champion lane)
+            if (position === 1) continue;
+
             // Se la posizione è vuota e abbiamo un mostro disponibile
             if (!this.players[PLAYERS.PLAYER2].board[position]) {
                 // Cerca un mostro nella mano
@@ -823,8 +858,11 @@ const gameState = {
             }
         }
 
-        // Posiziona magie nelle posizioni vuote
+        // Posiziona magie nelle posizioni vuote, ma non nella champion lane
         for (let position = 0; position < 3; position++) {
+            // Salta la posizione centrale (champion lane)
+            if (position === 1) continue;
+
             // Se la posizione è vuota e abbiamo una magia disponibile
             if (!this.players[PLAYERS.PLAYER2].spells[position]) {
                 // Cerca una magia nella mano
@@ -1028,6 +1066,9 @@ const gameState = {
         showNotification('Battle Phase - Resolving combat based on Speed', 'info');
         describePhase('battle');
 
+        // Log dello stato dei difensori all'inizio della battaglia
+        this.logDefendersCooldownState("Start of Battle");
+
         // Esegui le azioni di battaglia nell'ordine corretto
         setTimeout(() => {
             this.executeBattleActions();
@@ -1039,14 +1080,14 @@ const gameState = {
         // 1. Attivazione spell in ordine di priorità
         this.activateSpells();
 
-        // 2. Crea lista di tutte le azioni di attacco da eseguire
-        const attackActions = this.collectAttackActions();
+        // 2. Raccogliamo tutte le azioni (pump, defend, attack)
+        const allActions = this.collectAllActions();
 
-        // 3. Ordina per velocità (SPD), poi per ATK, poi per DEF
-        this.sortActionsBySpeed(attackActions);
+        // 3. Ordina tutte le azioni per velocità (SPD)
+        this.sortActionsBySpeed(allActions);
 
-        // 4. Esegui gli attacchi nell'ordine stabilito
-        this.executeAttacks(attackActions);
+        // 4. Esegui tutte le azioni nell'ordine stabilito
+        this.executeActions(allActions);
 
         // 5. Passa alla end phase dopo aver completato tutte le azioni
         setTimeout(() => {
@@ -1054,13 +1095,459 @@ const gameState = {
         }, 3000);
     },
 
+    // Raccoglie tutte le azioni (pump, defend, attack)
+    collectAllActions: function () {
+        const allActions = [];
+
+        // Raccoglie le azioni di entrambi i giocatori
+        for (let player = 0; player < 2; player++) {
+            for (let position = 0; position < 3; position++) {
+                if (this.players[player].board[position] && this.players[player].selectedActions[position]) {
+                    const action = this.players[player].selectedActions[position];
+
+                    allActions.push({
+                        player: player,
+                        position: position,
+                        card: this.players[player].board[position],
+                        action: action,
+                        type: this.getActionType(action)
+                    });
+                }
+            }
+        }
+
+        return allActions;
+    },
+
+    // Determina il tipo di azione (pump, defend, attack)
+    getActionType: function (action) {
+        if (action === ACTION_TYPES.PUMP) {
+            return 'pump';
+        } else if (action === ACTION_TYPES.DEFEND) {
+            return 'defend';
+        } else if (this.isAttackAction(action)) {
+            return 'attack';
+        } else {
+            return 'special';
+        }
+    },
+
+    // Ordina tutte le azioni in base alla velocità (SPD)
+    sortActionsBySpeed: function (actions) {
+        actions.sort((a, b) => {
+            // Ordina prima per tipo (pump e defend prima degli attacchi)
+            if (a.type !== b.type) {
+                if (a.type === 'pump') return -1;
+                if (b.type === 'pump') return 1;
+                if (a.type === 'defend') return -1;
+                if (b.type === 'defend') return 1;
+            }
+
+            // Per azioni dello stesso tipo, ordina per SPD (decrescente)
+            if (b.card.speed !== a.card.speed) {
+                return b.card.speed - a.card.speed;
+            }
+
+            // In caso di parità, ordina per ATK (decrescente)
+            if (b.card.attack !== a.card.attack) {
+                return b.card.attack - a.card.attack;
+            }
+
+            // In caso di ulteriore parità, ordina per DEF (decrescente)
+            return b.card.defense - a.card.defense;
+        });
+    },
+
+    // Esegui tutte le azioni nell'ordine stabilito
+    executeActions: function (actions) {
+        if (actions.length === 0) {
+            logGameEvent('No actions to execute.');
+            this.showBattleResolutionSummary([]);
+            return;
+        }
+
+        logGameEvent('Executing actions in order of SPD...');
+
+        // Array per tracciare tutti i risultati per il pop-up di riepilogo
+        const battleResults = [];
+
+        // Rivela gli attributi delle carte dell'avversario
+        this.revealOpponentCards();
+
+        // Elabora prima tutte le azioni non di attacco (pump, defend) in ordine di velocità
+        const attackActions = [];
+        const pumpResults = [];
+        const defendResults = [];
+
+        actions.forEach(action => {
+            if (action.type === 'pump') {
+                // Esegui l'azione pump
+                const result = this.executePump(action);
+                pumpResults.push(result);
+                battleResults.push(result);
+            } else if (action.type === 'defend') {
+                // Registra l'azione defend
+                const result = this.executeDefend(action);
+                defendResults.push(result);
+                battleResults.push(result);
+            } else if (action.type === 'attack') {
+                // Raccogli le azioni di attacco per elaborarle dopo
+                attackActions.push(action);
+            }
+        });
+
+        // Ora esegui gli attacchi in ordine di velocità
+        let index = 0;
+        const executeNextAttack = () => {
+            if (index >= attackActions.length) {
+                // Tutti gli attacchi sono stati eseguiti, mostra il riepilogo
+                this.showBattleResolutionSummary(battleResults);
+                return;
+            }
+
+            const attackAction = attackActions[index];
+            const result = this.executeAttack(attackAction);
+
+            // Aggiungi il risultato all'array dei risultati
+            battleResults.push(result);
+
+            // Incrementa l'indice e procedi con il prossimo attacco dopo un ritardo
+            index++;
+            setTimeout(executeNextAttack, 800);
+        };
+
+        // Inizia l'esecuzione degli attacchi
+        executeNextAttack();
+    },
+
+    // Esegui un'azione di pump
+    executePump: function (action) {
+        const { player, position, card } = action;
+
+        // Valori originali
+        const originalAtk = card.attack;
+        const originalDef = card.defense;
+        const originalSpd = card.speed;
+
+        // Applica i bonus di base
+        let atkBonus = 1;
+        let defBonus = 1;
+        let spdBonus = 1;
+
+        // Se è un pumper, potrebbe avere bonus speciali
+        if (card.class === "Pumper") {
+            // Controlla l'effetto specifico (ma il default è +1/+1/+1)
+            if (card.effect.includes("Attack")) {
+                atkBonus = 2; // +2 ATK invece di +1
+            } else if (card.effect.includes("Defense")) {
+                defBonus = 2; // +2 DEF invece di +1
+            } else if (card.effect.includes("Speed")) {
+                spdBonus = 2; // +2 SPD invece di +1
+            }
+        }
+
+        // Applica i bonus
+        card.attack += atkBonus;
+        card.defense += defBonus;
+        card.speed += spdBonus;
+
+        // Aggiorna visivamente la carta
+        this.updateCardStats(player, position, card);
+
+        // Log dell'azione
+        logGameEvent(`Player ${player + 1}'s ${card.name} pumps: ATK +${atkBonus}, DEF +${defBonus}, SPD +${spdBonus}`);
+
+        // Restituisci il risultato per il riepilogo battaglia
+        return {
+            type: 'pump',
+            player: player,
+            card: card,
+            position: position,
+            originalStats: {
+                atk: originalAtk,
+                def: originalDef,
+                spd: originalSpd
+            },
+            newStats: {
+                atk: card.attack,
+                def: card.defense,
+                spd: card.speed
+            },
+            bonuses: {
+                atk: atkBonus,
+                def: defBonus,
+                spd: spdBonus
+            }
+        };
+    },
+
+    // Esegui un'azione di difesa
+    executeDefend: function (action) {
+        const { player, position, card } = action;
+
+        // Log dell'azione
+        logGameEvent(`Player ${player + 1}'s ${card.name} (Defender) takes defensive stance and will be on cooldown next turn.`);
+
+        // Restituisci il risultato per il riepilogo battaglia
+        return {
+            type: 'defend',
+            player: player,
+            card: card,
+            position: position
+        };
+    },
+
     // Attiva tutte le carte magia giocate
     activateSpells: function () {
         logGameEvent('Activating spell cards...');
 
-        // Implementazione futura
-        // Per ora un messaggio informativo
-        showNotification('Spell cards would activate here', 'info');
+        // Attiva le spell per entrambi i giocatori
+        for (let player = 0; player < 2; player++) {
+            for (let position = 0; position < 3; position++) {
+                const spell = this.players[player].spells[position];
+                if (spell) {
+                    // Applica l'effetto della spell solo nella sua lane
+                    this.applySpellEffect(player, position, spell);
+                }
+            }
+        }
+    },
+
+    // Applica l'effetto di una spell nella sua lane
+    applySpellEffect: function (player, position, spell) {
+        const opponentPlayer = player === PLAYERS.PLAYER1 ? PLAYERS.PLAYER2 : PLAYERS.PLAYER1;
+
+        logGameEvent(`Player ${player + 1}'s spell "${spell.name}" activates in lane ${position + 1}.`);
+        showNotification(`Spell activated: ${spell.name}`, 'info');
+
+        // Implementa gli effetti delle spell in base al nome
+        switch (spell.name) {
+            case "Power Surge":
+                // Dà +3 attacco a un mostro amico nella stessa lane per un turno
+                if (this.players[player].board[position]) {
+                    this.players[player].board[position].attack += 3;
+                    logGameEvent(`${spell.name} gives +3 ATK to ${this.players[player].board[position].name}.`);
+                    // Aggiorna l'UI della carta potenziata
+                    this.updateCardStats(player, position, this.players[player].board[position]);
+                }
+                break;
+
+            case "Healing Wave":
+                // Cura +2 Difesa a tutte le carte mostro amiche
+                for (let i = 0; i < 3; i++) {
+                    if (this.players[player].board[i]) {
+                        this.players[player].board[i].defense += 2;
+                        logGameEvent(`${spell.name} heals ${this.players[player].board[i].name} for 2 DEF.`);
+                        // Aggiorna l'UI della carta curata
+                        this.updateCardStats(player, i, this.players[player].board[i]);
+                    }
+                }
+                break;
+
+            case "Blinding Flash":
+                // Riduce l'attacco di tutti i mostri nemici di 2 per un turno
+                for (let i = 0; i < 3; i++) {
+                    if (this.players[opponentPlayer].board[i]) {
+                        this.players[opponentPlayer].board[i].attack = Math.max(0, this.players[opponentPlayer].board[i].attack - 2);
+                        logGameEvent(`${spell.name} reduces ${this.players[opponentPlayer].board[i].name}'s ATK by 2.`);
+                        // Aggiorna l'UI della carta indebolita
+                        this.updateCardStats(opponentPlayer, i, this.players[opponentPlayer].board[i]);
+                    }
+                }
+                break;
+
+            case "Defensive Barrier":
+                // Dà +3 difesa a un mostro amico nella stessa lane per un turno
+                if (this.players[player].board[position]) {
+                    this.players[player].board[position].defense += 3;
+                    logGameEvent(`${spell.name} gives +3 DEF to ${this.players[player].board[position].name}.`);
+                    // Aggiorna l'UI della carta potenziata
+                    this.updateCardStats(player, position, this.players[player].board[position]);
+                }
+                break;
+
+            case "Speed Boost":
+                // Dà +3 velocità a un mostro amico nella stessa lane per un turno
+                if (this.players[player].board[position]) {
+                    this.players[player].board[position].speed += 3;
+                    logGameEvent(`${spell.name} gives +3 SPD to ${this.players[player].board[position].name}.`);
+                    // Aggiorna l'UI della carta potenziata
+                    this.updateCardStats(player, position, this.players[player].board[position]);
+                }
+                break;
+
+            case "Mana Drain":
+                // Impedisce all'avversario di usare una carta magia nel prossimo turno
+                this.players[opponentPlayer].cannotUseSpells = true;
+                logGameEvent(`${spell.name} prevents opponent from using spells next turn.`);
+                break;
+
+            case "Summoner's Call":
+                // Pesca due carte magia dal mazzo
+                for (let i = 0; i < 2; i++) {
+                    if (this.players[player].deck.length > 0) {
+                        const drawnCard = this.players[player].deck.pop();
+                        this.players[player].hand.push(drawnCard);
+                        logGameEvent(`${spell.name} draws ${drawnCard.name} from deck.`);
+                        // Aggiorna l'UI della mano
+                        this.updatePlayerHandUI(player);
+                    }
+                }
+                break;
+
+            case "Unholy Frenzy":
+                // Dà +2 attacco e -1 difesa a un mostro amico per un turno
+                if (this.players[player].board[position]) {
+                    this.players[player].board[position].attack += 2;
+                    this.players[player].board[position].defense = Math.max(1, this.players[player].board[position].defense - 1);
+                    logGameEvent(`${spell.name} gives +2 ATK and -1 DEF to ${this.players[player].board[position].name}.`);
+                    // Aggiorna l'UI della carta
+                    this.updateCardStats(player, position, this.players[player].board[position]);
+                }
+                break;
+
+            case "Teleport":
+                // Scambia la posizione di due mostri amici
+                // Implementazione semplificata: scambia con un mostro adiacente se possibile
+                const adjacentPosition = position === 0 ? 2 : 0;
+                if (this.players[player].board[position] && this.players[player].board[adjacentPosition]) {
+                    const temp = this.players[player].board[position];
+                    this.players[player].board[position] = this.players[player].board[adjacentPosition];
+                    this.players[player].board[adjacentPosition] = temp;
+                    logGameEvent(`${spell.name} swaps positions of ${this.players[player].board[position].name} and ${this.players[player].board[adjacentPosition].name}.`);
+                    // Aggiorna l'UI
+                    this.updateBoardUI(player);
+                }
+                break;
+
+            case "Quicksand":
+                // Riduce la velocità di tutti i mostri nemici di 2 per un turno
+                for (let i = 0; i < 3; i++) {
+                    if (this.players[opponentPlayer].board[i]) {
+                        this.players[opponentPlayer].board[i].speed = Math.max(1, this.players[opponentPlayer].board[i].speed - 2);
+                        logGameEvent(`${spell.name} reduces ${this.players[opponentPlayer].board[i].name}'s SPD by 2.`);
+                        // Aggiorna l'UI della carta
+                        this.updateCardStats(opponentPlayer, i, this.players[opponentPlayer].board[i]);
+                    }
+                }
+                break;
+
+            case "Petrify":
+                // Disabilita un mostro nemico per un turno
+                if (this.players[opponentPlayer].board[position]) {
+                    this.players[opponentPlayer].board[position].isPetrified = true;
+                    // Disabilita le azioni per questa carta
+                    this.players[opponentPlayer].selectedActions[position] = null;
+                    logGameEvent(`${spell.name} petrifies ${this.players[opponentPlayer].board[position].name}, disabling it for one turn.`);
+                    // Aggiorna visivamente la carta
+                    const monsterSlot = document.querySelector(`.player-area.${opponentPlayer === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .monster-slot[data-position="${position}"]`);
+                    if (monsterSlot) {
+                        monsterSlot.classList.add('petrified');
+                    }
+                }
+                break;
+
+            case "Sacrificial Ritual":
+                // Distrugge un mostro amico per infliggere il suo ATK come danno diretto all'avversario
+                if (this.players[player].board[position]) {
+                    const sacrificedMonster = this.players[player].board[position];
+                    const damage = sacrificedMonster.attack;
+
+                    // Applica il danno direttamente alla lane dell'avversario
+                    this.applyDamageToLane(opponentPlayer, position, damage);
+
+                    // Distruggi il mostro sacrificato
+                    logGameEvent(`${spell.name} sacrifices ${sacrificedMonster.name} to deal ${damage} damage to opponent's lane.`);
+                    this.destroyCard(player, position);
+                }
+                break;
+
+            case "Elemental Shift":
+                // Scambia i valori di ATK e DEF di un mostro amico per un turno
+                if (this.players[player].board[position]) {
+                    const monster = this.players[player].board[position];
+                    const tempAtk = monster.attack;
+                    monster.attack = monster.defense;
+                    monster.defense = tempAtk;
+                    logGameEvent(`${spell.name} swaps ${monster.name}'s ATK (now ${monster.attack}) and DEF (now ${monster.defense}).`);
+                    // Aggiorna l'UI della carta
+                    this.updateCardStats(player, position, monster);
+                }
+                break;
+
+            default:
+                logGameEvent(`Effect for spell ${spell.name} not implemented yet.`);
+        }
+
+        // Rimuovi la spell dopo l'attivazione (use-once)
+        this.players[player].spells[position] = null;
+
+        // Aggiorna l'UI dello slot spell
+        const spellSlot = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .spell-slot[data-position="${position}"]`);
+        if (spellSlot) {
+            spellSlot.innerHTML = "Spell";
+            spellSlot.classList.add('empty');
+        }
+    },
+
+    // Helper method to update board UI after teleport or similar effects
+    updateBoardUI: function (player) {
+        for (let position = 0; position < 3; position++) {
+            const card = this.players[player].board[position];
+            if (!card) continue;
+
+            // Aggiorna l'UI
+            if (player === PLAYERS.PLAYER1) {
+                const slot = document.querySelector(`.player-area.user .monster-slot[data-position="${position}"]`);
+                if (slot) {
+                    slot.innerHTML = '';
+                    slot.classList.remove('empty');
+
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card monster-card';
+
+                    // Determina la classe CSS appropriata per il tipo di mostro
+                    if (card.class === "Defender") {
+                        cardElement.classList.add('defender');
+                    } else if (card.class === "Pumper") {
+                        cardElement.classList.add('pumper');
+                    } else if (card.class === "All Rounder") {
+                        cardElement.classList.add('all-rounder');
+                    }
+
+                    cardElement.innerHTML = `
+                        ${card.name}
+                        <div class="card-stats">
+                            ATK: ${card.attack}<br>
+                            DEF: ${card.defense}<br>
+                            SPD: ${card.speed}
+                        </div>
+                        <div class="card-class">${card.class}</div>
+                        <div class="card-effect">${card.effect}</div>
+                    `;
+
+                    slot.appendChild(cardElement);
+
+                    // Aggiungi event listener per selezionare l'azione
+                    cardElement.addEventListener('click', () => {
+                        if (this.currentPhase === PHASES.STRATEGY) {
+                            this.showActionMenu(player, position, cardElement);
+                        }
+                    });
+                }
+            } else {
+                this.updateComputerBoardUI(position, card);
+            }
+        }
+    },
+
+    // Helper method to update player hand UI
+    updatePlayerHandUI: function (player) {
+        if (player === PLAYERS.PLAYER1) {
+            this.updatePlayer1CardsUI();
+        } else {
+            this.updatePlayer2CardsUI();
+        }
     },
 
     // Raccoglie tutte le azioni di attacco da entrambi i giocatori
@@ -1119,24 +1606,6 @@ const gameState = {
         return action === ACTION_TYPES.ATTACK_VERTICAL ||
             action === ACTION_TYPES.ATTACK_DIAGONAL_LEFT ||
             action === ACTION_TYPES.ATTACK_DIAGONAL_RIGHT;
-    },
-
-    // Ordina le azioni di attacco in base alla velocità (SPD)
-    sortActionsBySpeed: function (attackActions) {
-        attackActions.sort((a, b) => {
-            // Ordina per SPD (decrescente)
-            if (b.card.speed !== a.card.speed) {
-                return b.card.speed - a.card.speed;
-            }
-
-            // In caso di parità, ordina per ATK (decrescente)
-            if (b.card.attack !== a.card.attack) {
-                return b.card.attack - a.card.attack;
-            }
-
-            // In caso di ulteriore parità, ordina per DEF (decrescente)
-            return b.card.defense - a.card.defense;
-        });
     },
 
     // Esegui gli attacchi nell'ordine stabilito
@@ -1225,6 +1694,36 @@ const gameState = {
         });
     },
 
+    // Calcola il danno in base alle statistiche delle carte
+    calculateDamage: function (attackingCard, defendingCard, defenderAction) {
+        // Verifica se il difensore sta usando protezione
+        const isDefending = defenderAction === ACTION_TYPES.DEFEND;
+
+        // Se il difensore sta proteggendo, non prende danni
+        if (isDefending) {
+            logGameEvent(`${defendingCard.name} is defending and will not take damage.`);
+            return 0;
+        }
+
+        // Calcoliamo il valore effettivo di attacco
+        let effectiveAttack = attackingCard.attack;
+
+        // Formula di calcolo del danno come specificato nel documento
+        let damage;
+        if (effectiveAttack > defendingCard.attack) {
+            // Se l'attacco è maggiore, danno = differenza
+            damage = effectiveAttack - defendingCard.attack;
+        } else if (effectiveAttack === defendingCard.attack) {
+            // Se l'attacco è uguale, difesa ridotta a 1 (se maggiore di 1)
+            damage = Math.max(0, defendingCard.defense - 1);
+        } else {
+            // Se l'attacco è minore, danno = attacco effettivo
+            damage = effectiveAttack;
+        }
+
+        return damage;
+    },
+
     // Esegui un singolo attacco
     executeAttack: function (attackAction) {
         const { player, position, card, action } = attackAction;
@@ -1257,7 +1756,9 @@ const gameState = {
                 destroyed: false
             },
             damage: 0,
-            targetType: 'none'
+            targetType: 'none',
+            excessDamage: 0,
+            laneDamage: 0
         };
 
         // Se la posizione target non è valida, annulla l'attacco
@@ -1269,11 +1770,36 @@ const gameState = {
         // Ottieni il bersaglio (mostro o champion)
         const target = this.players[opponentPlayer].board[targetPosition];
 
+        // Verifica se l'attacco alla champion lane è valido
+        if (targetPosition === 1 && !target) {
+            // Verifica se almeno una delle side lane dell'avversario è a zero
+            const canAttackChampion = this.players[opponentPlayer].lanes[0] <= 0 ||
+                this.players[opponentPlayer].lanes[2] <= 0;
+
+            // Verifica se il mostro attaccante è adiacente a una side lane distrutta
+            const isAdjacentToDestroyedLane =
+                (position === 0 && this.players[opponentPlayer].lanes[0] <= 0) ||
+                (position === 1) || // La posizione centrale può sempre attaccare il campione se permesso
+                (position === 2 && this.players[opponentPlayer].lanes[2] <= 0);
+
+            if (!canAttackChampion || !isAdjacentToDestroyedLane) {
+                logGameEvent(`Player ${player + 1}'s ${card.name} cannot attack the champion lane yet. A side lane must be destroyed first.`);
+                return attackResult;
+            }
+        }
+
         // Se c'è un bersaglio, aggiorna il risultato dell'attacco
         if (target) {
             attackResult.target.card = target;
             attackResult.target.initialHealth = target.defense;
             attackResult.targetType = 'monster';
+
+            // Verifica se il difensore sta usando protezione
+            const isDefending = this.players[opponentPlayer].selectedActions[targetPosition] === ACTION_TYPES.DEFEND;
+
+            if (isDefending) {
+                logGameEvent(`Player ${opponentPlayer + 1}'s ${target.name} is defending and reduces incoming damage.`);
+            }
         } else {
             // Bersaglio è una lane
             attackResult.target.initialHealth = this.players[opponentPlayer].lanes[targetPosition];
@@ -1289,20 +1815,54 @@ const gameState = {
 
             // Aggiorna il risultato dell'attacco
             attackResult.damage = damage;
+            attackResult.laneDamage = damage;
             attackResult.target.finalHealth = this.players[opponentPlayer].lanes[targetPosition];
             return attackResult;
         }
 
         // Calcola il danno in base alle regole
-        const damage = this.calculateDamage(card, target);
+        const damage = this.calculateDamage(card, target, this.players[opponentPlayer].selectedActions[targetPosition]);
 
-        // Applica il danno al bersaglio
-        this.applyDamageToCard(opponentPlayer, targetPosition, damage);
-
-        // Aggiorna il risultato dell'attacco
+        // Aggiorna il risultato dell'attacco con il danno
         attackResult.damage = damage;
-        attackResult.target.finalHealth = target.defense > 0 ? target.defense : 0;
-        attackResult.target.destroyed = target.defense <= 0;
+
+        // Se il danno è maggiore della difesa del mostro, calcola l'eccesso di danno
+        let excessDamage = 0;
+
+        if (damage >= target.defense) {
+            // Calcola l'eccesso di danno che andrà applicato alla lane
+            excessDamage = damage - target.defense;
+            attackResult.excessDamage = excessDamage;
+
+            // Distruggi la carta e applica l'eccesso di danno alla lane
+            logGameEvent(`Player ${player + 1}'s ${card.name} destroys ${target.name} and deals ${excessDamage} excess damage to lane.`);
+
+            // Applica prima tutto il danno alla carta
+            this.applyDamageToCard(opponentPlayer, targetPosition, target.defense);
+
+            // Poi applica il danno in eccesso alla lane
+            if (excessDamage > 0) {
+                // Salva la salute della lane prima di applicare il danno
+                const initialLaneHealth = this.players[opponentPlayer].lanes[targetPosition];
+
+                // Applica il danno in eccesso alla lane
+                this.applyDamageToLane(opponentPlayer, targetPosition, excessDamage);
+
+                // Aggiorna il risultato con le informazioni sulla lane
+                attackResult.laneDamage = excessDamage;
+                attackResult.target.initialLaneHealth = initialLaneHealth;
+                attackResult.target.finalLaneHealth = this.players[opponentPlayer].lanes[targetPosition];
+            }
+
+            // Marca il bersaglio come distrutto
+            attackResult.target.destroyed = true;
+            attackResult.target.finalHealth = 0;
+        } else {
+            // Applica il danno senza eccesso
+            this.applyDamageToCard(opponentPlayer, targetPosition, damage);
+            attackResult.target.finalHealth = target.defense;
+            attackResult.target.destroyed = false;
+        }
 
         logGameEvent(`Player ${player + 1}'s ${card.name} attacks Player ${opponentPlayer + 1}'s ${target.name} and deals ${damage} damage.`);
         this.animateAttack(player, position, opponentPlayer, targetPosition, true);
@@ -1333,52 +1893,325 @@ const gameState = {
         content.className = 'battle-popup-content';
 
         if (battleResults.length === 0) {
-            content.innerHTML = `<p>No attacks were executed this turn.</p>`;
+            content.innerHTML = `<p>No actions were executed this turn.</p>`;
         } else {
+            // Aggiungi una breve spiegazione delle regole di battaglia
             let html = `<div class="battle-timeline">`;
 
-            // Aggiungi ogni risultato di attacco
-            battleResults.forEach((result, index) => {
-                const attackerName = result.attacker.card.name;
-                const attackerPlayer = result.attacker.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
-                const targetPlayer = result.target.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+            // Mostra lo stato dei difensori all'inizio del riepilogo
+            const defender1States = this.players[0].defendersOnCooldown || [false, false, false];
+            const defender2States = this.players[1].defendersOnCooldown || [false, false, false];
 
-                html += `
-                <div class="battle-event">
-                    <div class="battle-step">${index + 1}</div>
-                    <div class="battle-description">
-                `;
+            html += `
+            <div class="section-header">Defender Status (Battle Start)</div>
+            <div class="battle-event defender-status">
+                <div class="battle-step">🛡️</div>
+                <div class="battle-description">
+                    <p class="defender-status-title"><strong>Current Defender Status:</strong></p>
+                    <div class="defender-status-section">
+                        <span class="player-1">Player 1 Defenders:</span>
+                        <ul class="defender-list">`;
 
-                if (result.targetType === 'monster') {
-                    const targetName = result.target.card.name;
-                    const initialHealth = result.target.initialHealth;
-                    const finalHealth = result.target.finalHealth;
-                    const damage = result.damage;
+            // Player 1 defenders with names and positions
+            for (let pos = 0; pos < 3; pos++) {
+                const monster = this.players[0].board[pos];
+                if (monster && monster.class === "Defender") {
+                    const positionName = pos === 0 ? "Left" : pos === 1 ? "Center" : "Right";
+                    const cooldownStatus = defender1States[pos] ?
+                        '<span class="cooldown">ON COOLDOWN</span>' :
+                        '<span class="ready">READY</span>';
 
-                    html += `<p><span class="player-${result.attacker.player + 1}">${attackerPlayer}'s ${attackerName}</span> attacked <span class="player-${result.target.player + 1}">${targetPlayer}'s ${targetName}</span></p>`;
-                    html += `<p>Dealt <span class="damage">${damage} damage</span> (DEF: ${initialHealth} → ${finalHealth})</p>`;
-
-                    if (result.target.destroyed) {
-                        html += `<p class="destroyed"><span class="player-${result.target.player + 1}">${targetName}</span> was destroyed!</p>`;
-                    }
-                } else if (result.targetType === 'lane') {
-                    const position = result.target.position === 1 ? "Champion Lane" : `Side Lane ${result.target.position + 1}`;
-                    const damage = result.damage;
-                    html += `<p><span class="player-${result.attacker.player + 1}">${attackerPlayer}'s ${attackerName}</span> attacked <span class="player-${result.target.player + 1}">${targetPlayer}'s ${position}</span> directly</p>`;
-                    html += `<p>Dealt <span class="damage">${damage} damage</span> (HP: ${result.target.initialHealth} → ${result.target.finalHealth})</p>`;
-
-                    if (result.target.finalHealth <= 0) {
-                        html += `<p class="destroyed"><span class="player-${result.target.player + 1}">${position}</span> was destroyed!</p>`;
-                    }
-                } else {
-                    html += `<p>Attack could not be executed</p>`;
+                    html += `<li><strong>${monster.name}</strong> (${positionName}): ${cooldownStatus}${defender1States[pos] ? ' - Cannot defend this turn' : ' - Can defend this turn'}</li>`;
                 }
+            }
 
-                html += `
+            // If no defenders found for Player 1
+            if (!this.players[0].board.some(card => card && card.class === "Defender")) {
+                html += `<li><em>No Defender monsters on the field</em></li>`;
+            }
+
+            html += `</ul>
+                    </div>
+                    <div class="defender-status-section">
+                        <span class="player-2">Player 2 Defenders:</span>
+                        <ul class="defender-list">`;
+
+            // Player 2 defenders with names and positions
+            for (let pos = 0; pos < 3; pos++) {
+                const monster = this.players[1].board[pos];
+                if (monster && monster.class === "Defender") {
+                    const positionName = pos === 0 ? "Left" : pos === 1 ? "Center" : "Right";
+                    const cooldownStatus = defender2States[pos] ?
+                        '<span class="cooldown">ON COOLDOWN</span>' :
+                        '<span class="ready">READY</span>';
+
+                    html += `<li><strong>${monster.name}</strong> (${positionName}): ${cooldownStatus}${defender2States[pos] ? ' - Cannot defend this turn' : ' - Can defend this turn'}</li>`;
+                }
+            }
+
+            // If no defenders found for Player 2
+            if (!this.players[1].board.some(card => card && card.class === "Defender")) {
+                html += `<li><em>No Defender monsters on the field</em></li>`;
+            }
+
+            html += `</ul>
+                    </div>
+                    <div class="defender-rule">
+                        <p><strong>Defender Rule:</strong> After using defend action, a Defender cannot defend in the next turn.</p>
                     </div>
                 </div>
+            </div>
+            `;
+
+            // Filtra i risultati per tipo per organizzarli in sezioni
+            const pumpActions = battleResults.filter(result => result.type === 'pump');
+            const defendActions = battleResults.filter(result => result.type === 'defend');
+            const attackActions = battleResults.filter(result => (result.targetType === 'monster' || result.targetType === 'lane'));
+
+            // Sezione 1: Pump Actions (se presenti)
+            if (pumpActions.length > 0) {
+                html += `<div class="section-header">Step 1: Pump Actions (Stat Boosts)</div>`;
+
+                pumpActions.forEach((result, index) => {
+                    const playerName = result.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                    const cardName = result.card.name;
+                    const cardClass = result.card.class || "Unknown";
+                    const cardSpeed = result.originalStats.spd;
+
+                    html += `
+                    <div class="battle-event">
+                        <div class="battle-step">
+                            <div class="speed-indicator">SPD: ${cardSpeed}</div>
+                            ${index + 1}
+                        </div>
+                        <div class="battle-description">
+                            <p><span class="player-${result.player + 1}">${playerName}'s ${cardName}</span> (${cardClass}) pumps its stats:</p>
+                            <ul class="stats-change">
+                                <li>ATK: ${result.originalStats.atk} → <span class="buff">${result.newStats.atk}</span> (+${result.bonuses.atk})</li>
+                                <li>DEF: ${result.originalStats.def} → <span class="buff">${result.newStats.def}</span> (+${result.bonuses.def})</li>
+                                <li>SPD: ${result.originalStats.spd} → <span class="buff">${result.newStats.spd}</span> (+${result.bonuses.spd})</li>
+                            </ul>
+                            <p class="action-explanation"><em>Pumper monsters can increase all stats, but cannot attack in the same turn.</em></p>
+                        </div>
+                    </div>
+                    `;
+                });
+            }
+
+            // Sezione 2: Defend Actions (se presenti)
+            if (defendActions.length > 0) {
+                html += `<div class="section-header">Step 2: Defend Actions</div>`;
+
+                defendActions.forEach((result, index) => {
+                    const playerName = result.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                    const cardName = result.card.name;
+                    const cardClass = result.card.class || "Unknown";
+                    const cardSpeed = result.card.speed;
+
+                    html += `
+                    <div class="battle-event">
+                        <div class="battle-step">
+                            <div class="speed-indicator">SPD: ${cardSpeed}</div>
+                            ${index + 1}
+                        </div>
+                        <div class="battle-description">
+                            <p><span class="player-${result.player + 1}">${playerName}'s ${cardName}</span> (${cardClass}) takes defensive stance!</p>
+                            <p class="defend-note">This monster will take no damage from attacks this turn, but <span class="cooldown">cannot defend next turn</span>.</p>
+                            <p class="action-explanation"><em>Defender monsters can block all incoming damage, but must skip defending next turn.</em></p>
+                        </div>
+                    </div>
+                    `;
+                });
+            }
+
+            // Sezione 3: Attack Actions (sempre presenti)
+            if (attackActions.length > 0) {
+                html += `<div class="section-header">Step 3: Attack Actions</div>
+                         <div class="attack-explanation">Attacks are resolved in order of Speed (SPD). Faster monsters attack first.</div>`;
+
+                attackActions.forEach((result, index) => {
+                    html += `
+                    <div class="battle-event">
+                        <div class="battle-step">
                 `;
-            });
+
+                    // Mostra la velocità dell'attaccante se disponibile
+                    if (result.attacker && result.attacker.card) {
+                        html += `<div class="speed-indicator">SPD: ${result.attacker.card.speed}</div>`;
+                    }
+
+                    html += `${index + 1}</div>
+                        <div class="battle-description">
+                    `;
+
+                    if (result.targetType === 'monster') {
+                        const attackerName = result.attacker.card.name;
+                        const attackerPlayer = result.attacker.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                        const targetPlayer = result.target.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                        const attackerClass = result.attacker.card.class || "Unknown";
+                        const targetName = result.target.card.name;
+                        const targetClass = result.target.card.class || "Unknown";
+                        const initialHealth = result.target.initialHealth;
+                        const finalHealth = result.target.finalHealth;
+                        const damage = result.damage;
+
+                        // Determina il tipo di attacco (normale, diagonale)
+                        let attackType = "vertical attack";
+                        if (result.attacker.action === ACTION_TYPES.ATTACK_DIAGONAL_LEFT) {
+                            attackType = "diagonal left attack";
+                        } else if (result.attacker.action === ACTION_TYPES.ATTACK_DIAGONAL_RIGHT) {
+                            attackType = "diagonal right attack";
+                        }
+
+                        html += `<p><span class="player-${result.attacker.player + 1}">${attackerPlayer}'s ${attackerName}</span> (${attackerClass}) used <strong>${attackType}</strong> against <span class="player-${result.target.player + 1}">${targetPlayer}'s ${targetName}</span> (${targetClass})</p>`;
+
+                        // Verifica se il difensore sta usando protezione
+                        const isDefending = this.players[result.target.player].selectedActions[result.target.position] === ACTION_TYPES.DEFEND;
+                        const isDefenderClass = targetClass === "Defender";
+
+                        if (isDefending) {
+                            const defenderText = isDefenderClass ?
+                                `<p><span class="player-${result.target.player + 1}">${targetName}</span> (Defender) is actively defending and takes no damage. <span class="cooldown">Will be on cooldown next turn.</span></p>` :
+                                `<p><span class="player-${result.target.player + 1}">${targetName}</span> is defending and takes no damage.</p>`;
+
+                            html += defenderText;
+                        } else {
+                            // Spiega il calcolo del danno
+                            const attackerAtk = result.attacker.card.attack;
+                            const defenderAtk = result.target.card.attack;
+
+                            html += `<p>Dealt <span class="damage">${damage} damage</span> (DEF: ${initialHealth} → ${finalHealth})</p>`;
+
+                            // Spiega come è stato calcolato il danno
+                            if (attackerAtk > defenderAtk) {
+                                html += `<p class="damage-explanation"><em>Damage = ATK difference (${attackerAtk} - ${defenderAtk} = ${attackerAtk - defenderAtk})</em></p>`;
+                            } else if (attackerAtk === defenderAtk) {
+                                html += `<p class="damage-explanation"><em>Equal ATK: Target DEF reduced to 1 (if greater)</em></p>`;
+                            } else {
+                                html += `<p class="damage-explanation"><em>ATK less than target's ATK: Damage = Attacker's ATK (${attackerAtk})</em></p>`;
+                            }
+                        }
+
+                        if (result.target.destroyed) {
+                            html += `<p class="destroyed"><span class="player-${result.target.player + 1}">${targetName}</span> was destroyed and sent to graveyard!</p>`;
+
+                            // Aggiungi informazioni sul danno in eccesso
+                            if (result.excessDamage && result.excessDamage > 0) {
+                                html += `<p class="excess-damage">Excess damage (${result.excessDamage}) was applied to the lane!</p>`;
+
+                                // Se la lane è stata distrutta dal danno in eccesso
+                                if (result.target.finalLaneHealth <= 0) {
+                                    html += `<p class="lane-destroyed">Lane was also destroyed from excess damage!</p>`;
+                                }
+                            }
+                        }
+                    } else if (result.targetType === 'lane') {
+                        const attackerName = result.attacker.card.name;
+                        const attackerPlayer = result.attacker.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                        const targetPlayer = result.target.player === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+                        const attackerClass = result.attacker.card.class || "Unknown";
+                        const position = result.target.position === 1 ? "Champion Lane" : `Side Lane ${result.target.position + 1}`;
+                        const damage = result.damage;
+
+                        html += `<p><span class="player-${result.attacker.player + 1}">${attackerPlayer}'s ${attackerName}</span> (${attackerClass}) attacked <span class="player-${result.target.player + 1}">${targetPlayer}'s ${position}</span> directly</p>`;
+                        html += `<p>Dealt <span class="damage">${damage} damage</span> (Lane HP: ${result.target.initialHealth} → ${result.target.finalHealth})</p>`;
+                        html += `<p class="damage-explanation"><em>Direct lane damage = Attacker's ATK (${damage})</em></p>`;
+
+                        if (result.target.finalHealth <= 0) {
+                            html += `<p class="destroyed"><span class="player-${result.target.player + 1}">${position}</span> was destroyed!</p>`;
+
+                            if (result.target.position === 1) {
+                                html += `<p class="victory"><span class="player-${result.attacker.player + 1}">${attackerPlayer}</span> has destroyed the opponent's Champion Lane!</p>`;
+                            } else {
+                                html += `<p class="lane-strategy"><em>A destroyed side lane allows attacks on the Champion Lane from that side.</em></p>`;
+                            }
+                        }
+                    } else {
+                        html += `<p>Action could not be executed</p>`;
+                    }
+
+                    html += `
+                        </div>
+                    </div>
+                    `;
+                });
+            }
+
+            // Calcola lo stato dei difensori per il prossimo turno
+            const nextTurnDefender1States = [...this.players[0].defendersOnCooldown];
+            const nextTurnDefender2States = [...this.players[1].defendersOnCooldown];
+
+            // Aggiorna per riflettere i defender che hanno usato difesa in questo turno
+            for (let player = 0; player < 2; player++) {
+                for (let pos = 0; pos < 3; pos++) {
+                    if (this.players[player].selectedActions[pos] === ACTION_TYPES.DEFEND) {
+                        if (player === 0) nextTurnDefender1States[pos] = true;
+                        if (player === 1) nextTurnDefender2States[pos] = true;
+                    }
+                }
+            }
+
+            // Aggiungi una riga per mostrare lo stato dei difensori per il prossimo turno
+            html += `
+            <div class="section-header">Defender Status (Next Turn)</div>
+            <div class="battle-event defender-status">
+                <div class="battle-step">🛡️</div>
+                <div class="battle-description">
+                    <p class="defender-status-title"><strong>Next Turn Defender Status:</strong></p>
+                    <div class="defender-status-section">
+                        <span class="player-1">Player 1 Defenders:</span>
+                        <ul class="defender-list">`;
+
+            // Player 1 defenders next turn status
+            for (let pos = 0; pos < 3; pos++) {
+                const monster = this.players[0].board[pos];
+                if (monster && monster.class === "Defender") {
+                    const positionName = pos === 0 ? "Left" : pos === 1 ? "Center" : "Right";
+                    const cooldownStatus = nextTurnDefender1States[pos] ?
+                        '<span class="cooldown">ON COOLDOWN</span>' :
+                        '<span class="ready">READY</span>';
+
+                    html += `<li><strong>${monster.name}</strong> (${positionName}): ${cooldownStatus}${nextTurnDefender1States[pos] ? ' - Cannot defend next turn' : ' - Can defend next turn'}</li>`;
+                }
+            }
+
+            // If no defenders found for Player 1
+            if (!this.players[0].board.some(card => card && card.class === "Defender")) {
+                html += `<li><em>No Defender monsters on the field</em></li>`;
+            }
+
+            html += `</ul>
+                    </div>
+                    <div class="defender-status-section">
+                        <span class="player-2">Player 2 Defenders:</span>
+                        <ul class="defender-list">`;
+
+            // Player 2 defenders next turn status
+            for (let pos = 0; pos < 3; pos++) {
+                const monster = this.players[1].board[pos];
+                if (monster && monster.class === "Defender") {
+                    const positionName = pos === 0 ? "Left" : pos === 1 ? "Center" : "Right";
+                    const cooldownStatus = nextTurnDefender2States[pos] ?
+                        '<span class="cooldown">ON COOLDOWN</span>' :
+                        '<span class="ready">READY</span>';
+
+                    html += `<li><strong>${monster.name}</strong> (${positionName}): ${cooldownStatus}${nextTurnDefender2States[pos] ? ' - Cannot defend next turn' : ' - Can defend next turn'}</li>`;
+                }
+            }
+
+            // If no defenders found for Player 2
+            if (!this.players[1].board.some(card => card && card.class === "Defender")) {
+                html += `<li><em>No Defender monsters on the field</em></li>`;
+            }
+
+            html += `</ul>
+                    </div>
+                    <div class="defender-rule">
+                        <p><strong>Defender Rule:</strong> After using defend action, a Defender cannot defend in the next turn.</p>
+                    </div>
+                </div>
+            </div>
+            `;
 
             html += `</div>`;
             content.innerHTML = html;
@@ -1417,6 +2250,16 @@ const gameState = {
         // Ottieni la carta
         const card = this.players[player].board[position];
 
+        // Se l'azione è pump, applica subito il bonus
+        if (action === ACTION_TYPES.PUMP) {
+            card.attack += 1;
+            card.defense += 1;
+            card.speed += 1;
+            // Aggiorna l'UI della carta
+            this.updateCardStats(player, position, card);
+            logGameEvent(`Player ${player + 1}'s ${card.name} pumps all stats by +1`);
+        }
+
         // Log dell'azione
         logGameEvent(`Player ${player + 1}'s ${card.name} will ${this.getActionLabel(action)}`);
 
@@ -1439,6 +2282,8 @@ const gameState = {
                     actionIndicator.classList.add('defend-action');
                 } else if (action === ACTION_TYPES.PUMP) {
                     actionIndicator.classList.add('pump-action');
+                } else if (action === ACTION_TYPES.SPECIAL) {
+                    actionIndicator.classList.add('special-action');
                 }
 
                 cardElement.appendChild(actionIndicator);
@@ -1449,35 +2294,6 @@ const gameState = {
         if (player === PLAYERS.PLAYER1) {
             showNotification(`${card.name} will ${this.getActionLabel(action)}`, 'info');
         }
-    },
-
-    // Calcola il danno in base alle statistiche delle carte
-    calculateDamage: function (attackingCard, defendingCard) {
-        // Verifica se il difensore sta usando protezione
-        const isDefending = defendingCard.selectedAction === ACTION_TYPES.DEFEND;
-
-        // Calcoliamo il valore effettivo di attacco
-        let effectiveAttack = attackingCard.attack;
-
-        // Se il difensore sta proteggendo, riduce il danno del suo ATK
-        if (isDefending) {
-            effectiveAttack = Math.max(0, effectiveAttack - defendingCard.attack);
-        }
-
-        // Formula di calcolo del danno come specificato nel documento
-        let damage;
-        if (effectiveAttack > defendingCard.attack) {
-            // Se l'attacco è maggiore, danno = differenza
-            damage = effectiveAttack - defendingCard.attack;
-        } else if (effectiveAttack === defendingCard.attack) {
-            // Se l'attacco è uguale, difesa ridotta a 1 (se maggiore di 1)
-            damage = Math.max(0, defendingCard.defense - 1);
-        } else {
-            // Se l'attacco è minore, danno = attacco effettivo
-            damage = effectiveAttack;
-        }
-
-        return damage;
     },
 
     // Applica danno a una carta
@@ -1539,8 +2355,8 @@ const gameState = {
             // Se la vita della lane va a zero o meno, la lane è distrutta
             if (this.players[player].lanes[position] <= 0) {
                 this.players[player].lanes[position] = 0;
-                logGameEvent(`Player ${player + 1}'s lane ${position} has been destroyed!`);
-                showNotification(`Player ${player + 1}'s lane ${position} has been destroyed!`, 'warning');
+                logGameEvent(`Player ${player + 1}'s lane ${position + 1} has been destroyed!`);
+                showNotification(`Player ${player + 1}'s lane ${position + 1} has been destroyed!`, 'warning');
             }
 
             // Aggiorna l'interfaccia delle lane
@@ -1643,67 +2459,73 @@ const gameState = {
     // Funzione per mostrare il menu delle azioni per una carta
     showActionMenu: function (player, position, cardElement) {
         // Solo il giocatore attivo può selezionare azioni durante la fase strategica
-        if (this.currentPhase !== PHASES.STRATEGY || player !== this.activePlayer) {
+        if (this.currentPhase !== PHASES.STRATEGY) {
             return;
         }
-
-        // Rimuovi tutti i menu esistenti
-        document.querySelectorAll('.action-menu').forEach(menu => menu.remove());
 
         // Ottieni la carta dal game state
         const card = this.players[player].board[position];
         if (!card) return;
 
-        // Crea il menu delle azioni
-        const actionMenu = document.createElement('div');
-        actionMenu.className = 'action-menu';
-
-        // Determina le azioni disponibili in base al tipo di carta
-        const actions = this.getAvailableActions(card);
-
-        // Crea pulsanti per ogni azione
-        actions.forEach(action => {
-            const actionButton = document.createElement('button');
-            actionButton.className = 'action-button';
-            actionButton.textContent = this.getActionLabel(action);
-            actionButton.setAttribute('data-action', action);
-
-            // Aggiungi evento click
-            actionButton.addEventListener('click', () => {
-                this.selectAction(player, position, action);
-                actionMenu.remove();
-            });
-
-            actionMenu.appendChild(actionButton);
-        });
-
-        // Posiziona il menu all'interno della carta
-        cardElement.appendChild(actionMenu);
+        // Apriamo sempre il popup laterale di dettaglio carta invece del menu contestuale
+        const cardElement2 = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .monster-slot[data-position="${position}"] .card`);
+        if (cardElement2) {
+            showCardDetails(cardElement2);
+        }
     },
 
     // Ottiene le azioni disponibili per una carta
-    getAvailableActions: function (card) {
+    getAvailableActions: function (card, position, player) {
         const actions = [];
 
-        // Tutte le carte possono attaccare verticalmente
-        actions.push(ACTION_TYPES.ATTACK_VERTICAL);
-
-        // Le carte All Rounder possono attaccare in diagonale
-        if (card.class === "All Rounder") {
-            // La posizione della carta determinerà se può attaccare in diagonale in entrambe le direzioni
-            // Questa logica sarà gestita durante la raccolta delle azioni
-            actions.push(ACTION_TYPES.ATTACK_DIAGONAL_LEFT);
-            actions.push(ACTION_TYPES.ATTACK_DIAGONAL_RIGHT);
+        // Verifica che player sia definito
+        if (player === undefined) {
+            console.error('Player is undefined in getAvailableActions');
+            return actions;
         }
 
-        // Le carte Defender possono difendere
+        // Determina le azioni disponibili in base al tipo di mostro
         if (card.class === "Defender") {
-            actions.push(ACTION_TYPES.DEFEND);
+            // I Defender possono attaccare verticalmente o difendere (ma non entrambi)
+            actions.push(ACTION_TYPES.ATTACK_VERTICAL);
+
+            // Verifica se il difensore è in cooldown
+            const isOnCooldown = this.players[player].defendersOnCooldown[position];
+
+            // Solo se NON è in cooldown, può difendere
+            if (!isOnCooldown) {
+                actions.push(ACTION_TYPES.DEFEND);
+            } else {
+                // Log quando un difensore non può difendere per cooldown
+                console.log(`Defender at position ${position} for player ${player} cannot defend this turn (on cooldown)`);
+                logGameEvent(`Player ${player + 1}'s Defender at position ${position + 1} cannot defend this turn (cooldown active).`);
+            }
+        }
+        else if (card.class === "Pumper") {
+            // I Pumper possono attaccare verticalmente o pompare statistiche (ma non entrambi)
+            actions.push(ACTION_TYPES.ATTACK_VERTICAL);
+            actions.push(ACTION_TYPES.PUMP);
+        }
+        else if (card.class === "All Rounder") {
+            // Gli All Rounder possono attaccare verticalmente O in diagonale (ma non entrambi)
+            actions.push(ACTION_TYPES.ATTACK_VERTICAL);
+
+            // Verifica se gli attacchi diagonali sono validi in base alla posizione
+            if (position > 0) {
+                actions.push(ACTION_TYPES.ATTACK_DIAGONAL_LEFT);
+            }
+            if (position < 2) {
+                actions.push(ACTION_TYPES.ATTACK_DIAGONAL_RIGHT);
+            }
+        }
+        else {
+            // Per le altre carte, solo attacco verticale
+            actions.push(ACTION_TYPES.ATTACK_VERTICAL);
         }
 
-        // Le carte Pumper possono potenziare le statistiche
-        if (card.class === "Pumper") {
-            actions.push(ACTION_TYPES.PUMP);
+        // Aggiungi abilità speciali se presenti
+        if (card.effect && card.effect.includes("special")) {
+            actions.push(ACTION_TYPES.SPECIAL);
         }
 
         return actions;
@@ -1740,6 +2562,15 @@ const gameState = {
         showNotification('End Phase - Updating game state', 'info');
         describePhase('end');
 
+        // Aggiorna lo stato dei cooldown dei difensori
+        this.updateDefenderCooldowns();
+
+        // Log dello stato dei difensori alla fine del turno
+        this.logDefendersCooldownState("End of Turn");
+
+        // Marca tutti i mostri sul campo come "hanno combattuto"
+        this.markMonstersAsFought();
+
         // Dopo 2 secondi, passa al turno successivo o termina il gioco
         setTimeout(() => {
             // Controlla le condizioni di vittoria (simulato)
@@ -1752,6 +2583,39 @@ const gameState = {
                 this.startNewTurn();
             }
         }, 2000);
+    },
+
+    // Log dello stato dei difensori in cooldown
+    logDefendersCooldownState: function (phase) {
+        logGameEvent(`${phase} - Defender Cooldown Status:`);
+        logGameEvent(`Player 1 defenders on cooldown: [${this.players[0].defendersOnCooldown}]`);
+        logGameEvent(`Player 2 defenders on cooldown: [${this.players[1].defendersOnCooldown}]`);
+    },
+
+    // Aggiorna i cooldown dei difensori alla fine del turno
+    updateDefenderCooldowns: function () {
+        // Per ogni giocatore
+        for (let player = 0; player < 2; player++) {
+            // Per ogni posizione
+            for (let position = 0; position < 3; position++) {
+                // Se è un difensore e ha usato l'azione difendi in questo turno
+                if (this.players[player].board[position]?.class === "Defender" &&
+                    this.players[player].selectedActions[position] === ACTION_TYPES.DEFEND) {
+
+                    // Metti il difensore in cooldown per il prossimo turno
+                    this.players[player].defendersOnCooldown[position] = true;
+                    logGameEvent(`Player ${player + 1}'s Defender at position ${position + 1} is now on cooldown for next turn.`);
+                }
+                // Se è un difensore e non ha usato l'azione difendi in questo turno
+                else if (this.players[player].board[position]?.class === "Defender" &&
+                    this.players[player].selectedActions[position] !== ACTION_TYPES.DEFEND) {
+
+                    // Rimuovi il cooldown
+                    this.players[player].defendersOnCooldown[position] = false;
+                    logGameEvent(`Player ${player + 1}'s Defender at position ${position + 1} cooldown has been reset.`);
+                }
+            }
+        }
     },
 
     // Cambia il giocatore attivo
@@ -1819,15 +2683,49 @@ const gameState = {
 
     // Verifica le condizioni di vittoria (simulato)
     checkWinConditions: function () {
-        // Per ora, ritorniamo sempre false per continuare il gioco
+        // Controlla se la champion lane di uno dei giocatori è stata distrutta
+        if (this.players[PLAYERS.PLAYER1].lanes[1] <= 0) {
+            // Giocatore 1 ha perso
+            this.winner = PLAYERS.PLAYER2;
+            return true;
+        }
+
+        if (this.players[PLAYERS.PLAYER2].lanes[1] <= 0) {
+            // Giocatore 2 ha perso
+            this.winner = PLAYERS.PLAYER1;
+            return true;
+        }
+
         return false;
     },
 
     // Termina il gioco
     endGame: function () {
         logGameEvent('Game has ended!');
-        showNotification('Game has ended!', 'success');
-        // Qui andrebbe implementata la logica di fine gioco
+        const winnerName = this.winner === PLAYERS.PLAYER1 ? "Player 1" : "Player 2";
+        showNotification(`Game has ended! ${winnerName} wins!`, 'success');
+
+        // Crea un overlay per mostrare il vincitore
+        const overlay = document.createElement('div');
+        overlay.className = 'game-over-overlay';
+
+        const container = document.createElement('div');
+        container.className = 'game-over-container';
+
+        container.innerHTML = `
+            <h1>Game Over</h1>
+            <h2>${winnerName} Wins!</h2>
+            <p>The champion of ${this.winner === PLAYERS.PLAYER1 ? "Player 2" : "Player 1"} has been defeated!</p>
+            <button class="restart-button">Play Again</button>
+        `;
+
+        overlay.appendChild(container);
+        document.body.appendChild(overlay);
+
+        // Aggiungi l'event listener per il pulsante di restart
+        document.querySelector('.restart-button').addEventListener('click', function () {
+            location.reload(); // Ricarica la pagina per iniziare una nuova partita
+        });
     },
 
     // Aggiorna l'interfaccia utente per mostrare la fase corrente
@@ -1897,6 +2795,38 @@ const gameState = {
                 timerElement.style.fontWeight = '600';
             }
         }
+    },
+
+    // Marca tutti i mostri sul campo come "hanno combattuto"
+    markMonstersAsFought: function () {
+        // Per ogni giocatore
+        for (let player = 0; player < 2; player++) {
+            // Per ogni posizione
+            for (let position = 0; position < 3; position++) {
+                // Se c'è un mostro in questa posizione
+                if (this.players[player].board[position]) {
+                    // Marca il mostro come "ha combattuto"
+                    this.players[player].monstersHaveFought[position] = true;
+                    logGameEvent(`Monster in position ${position + 1} for Player ${player + 1} marked as 'has fought' and cannot be replaced.`);
+                }
+            }
+        }
+    },
+
+    // Verifica se un mostro può essere sostituito
+    canReplaceMonster: function (player, position) {
+        // Se non c'è un mostro in questa posizione, si può sempre posizionare
+        if (!this.players[player].board[position]) {
+            return true;
+        }
+
+        // Se c'è un mostro e ha già combattuto, non può essere sostituito
+        if (this.players[player].monstersHaveFought[position]) {
+            return false;
+        }
+
+        // Altrimenti può essere sostituito
+        return true;
     }
 };
 
@@ -2137,6 +3067,15 @@ function setupCardClickHandlers() {
         const card = e.target.closest('.card');
         if (card) {
             showCardDetails(card);
+
+            // Se è una carta campione e siamo nella fase strategica, mostra il menu degli effetti speciali
+            if (card.classList.contains('champion') && gameState.currentPhase === PHASES.STRATEGY) {
+                const playerArea = card.closest('.player-area');
+                if (playerArea && playerArea.classList.contains('user')) {
+                    // Solo il giocatore umano può attivare effetti campione
+                    showChampionEffectsMenu(card);
+                }
+            }
         }
     });
 }
@@ -2149,11 +3088,16 @@ function showCardDetails(card) {
     // Estrai informazioni dalla carta
     let cardName = card.innerText.split('\n')[0];
     let cardType = card.classList.contains('monster-card') ? 'Monster' : 'Spell';
+    let isChampion = card.classList.contains('champion');
+
+    if (isChampion) {
+        cardType = 'Champion';
+    }
 
     // Troviamo ATK, DEF, SPD dai contenuti della carta
     let atk = "N/A", def = "N/A", spd = "N/A", desc = "N/A", cardClass = "N/A";
 
-    if (cardType === 'Monster') {
+    if (cardType === 'Monster' || cardType === 'Champion') {
         const statsText = card.querySelector('.card-stats')?.innerText;
         if (statsText) {
             const atkMatch = statsText.match(/ATK:\s*(\d+)/);
@@ -2191,13 +3135,19 @@ function showCardDetails(card) {
         // Fallback per la descrizione
         if (!desc) {
             if (cardClass === "Defender") {
-                desc = "Can attack vertically or protect (cannot protect in consecutive turns). Protects for value equal to ATK.";
+                desc = "Can EITHER attack vertically OR defend (cannot defend in consecutive turns). When defending, takes no damage.";
             } else if (cardClass === "Pumper") {
-                desc = "Can attack vertically or pump stats (+1 ATK, +1 DEF, +1 SPD) for one turn.";
+                desc = "Can EITHER attack vertically OR pump stats (+1 ATK, +1 DEF, +1 SPD) for one turn.";
             } else if (cardClass === "All Rounder") {
-                desc = "Can attack vertically or diagonally, targeting any opponent monster.";
+                desc = "Can EITHER attack vertically OR attack diagonally to target any adjacent opponent monster.";
             } else if (cardClass === "Champion") {
-                desc = "Main card. When its DEF is reduced to 0, you lose the game.";
+                // Trova il campione corrispondente nel catalogo
+                const champion = findChampionByName(cardName);
+                if (champion && champion.effect) {
+                    desc = champion.effect;
+                } else {
+                    desc = "Main card. When its DEF is reduced to 0, you lose the game.";
+                }
             }
         }
     } else {
@@ -2236,38 +3186,142 @@ function showCardDetails(card) {
         actionList.innerHTML = '';
 
         if (cardType === 'Monster') {
-            // Azioni di base
-            const baseAction = document.createElement('div');
-            baseAction.className = 'action-badge';
-            baseAction.textContent = 'Attack ↑';
-            actionList.appendChild(baseAction);
+            // Trova la posizione della carta sul campo e il giocatore
+            const cardElement = card.closest('.monster-slot');
+            if (cardElement) {
+                const position = parseInt(cardElement.dataset.position);
+                const isPlayer1 = cardElement.closest('.player-area.user') !== null;
+                const player = isPlayer1 ? PLAYERS.PLAYER1 : PLAYERS.PLAYER2;
 
-            // Azioni basate sul tipo di mostro
-            if (cardClass === "All Rounder") {
-                const diag1 = document.createElement('div');
-                diag1.className = 'action-badge';
-                diag1.textContent = 'Attack ↖';
-                actionList.appendChild(diag1);
+                // Solo se siamo nella fase strategica e la carta è del giocatore 1
+                if (gameState.currentPhase === PHASES.STRATEGY && isPlayer1) {
+                    // Ottieni le azioni disponibili
+                    const actions = gameState.getAvailableActions(
+                        gameState.players[player].board[position],
+                        position,
+                        player
+                    );
 
-                const diag2 = document.createElement('div');
-                diag2.className = 'action-badge';
-                diag2.textContent = 'Attack ↗';
-                actionList.appendChild(diag2);
+                    // Crea pulsanti per ogni azione
+                    actions.forEach(action => {
+                        const actionButton = document.createElement('button');
+                        actionButton.className = 'action-button clickable';
+                        actionButton.textContent = gameState.getActionLabel(action);
+                        actionButton.setAttribute('data-action', action);
+
+                        // Aggiungi evento click
+                        actionButton.addEventListener('click', () => {
+                            gameState.selectAction(player, position, action);
+
+                            // Chiudi il visualizzatore dopo la selezione
+                            detailViewer.style.display = 'none';
+                        });
+
+                        actionList.appendChild(actionButton);
+                    });
+
+                    // Aggiungi messaggio per selezionare azione
+                    const actionMessage = document.createElement('div');
+                    actionMessage.className = 'action-message';
+
+                    // Messaggio personalizzato in base al tipo di mostro
+                    if (cardClass === "Defender") {
+                        actionMessage.textContent = 'Choose ONE action: Attack OR Defend. Defend prevents all damage but has 1 turn cooldown.';
+                    } else if (cardClass === "Pumper") {
+                        actionMessage.textContent = 'Choose ONE action: Attack OR Pump (+1 to all stats).';
+                    } else if (cardClass === "All Rounder") {
+                        actionMessage.textContent = 'Choose ONE attack direction: Vertical OR Diagonal.';
+                    } else {
+                        actionMessage.textContent = 'Click on an action button to select it for this turn.';
+                    }
+
+                    actionList.appendChild(actionMessage);
+                } else {
+                    // Mostra solo informazioni sulle azioni disponibili senza pulsanti
+                    if (cardClass === "Defender") {
+                        actionList.innerHTML = `
+                            <div class="action-title">Defender Abilities:</div>
+                            <div class="action-badges">
+                                <div class="action-badge">Attack ↑</div>
+                                <div class="action-badge">Defend 🛡️</div>
+                            </div>
+                            <div class="action-explanation">
+                                <p><strong>CHOOSE ONE ACTION PER TURN:</strong></p>
+                                <p>• Attack vertically against opponent</p>
+                                <p>• Defend to block all incoming damage</p>
+                                <p class="emphasis">Cannot defend in consecutive turns (1 turn cooldown)</p>
+                            </div>
+                        `;
+                    } else if (cardClass === "Pumper") {
+                        actionList.innerHTML = `
+                            <div class="action-title">Pumper Abilities:</div>
+                            <div class="action-badges">
+                                <div class="action-badge">Attack ↑</div>
+                                <div class="action-badge">Pump +1/+1/+1</div>
+                            </div>
+                            <div class="action-explanation">
+                                <p><strong>CHOOSE ONE ACTION PER TURN:</strong></p>
+                                <p>• Attack vertically against opponent</p>
+                                <p>• Pump to gain +1 ATK, +1 DEF, and +1 SPD</p>
+                                <p class="emphasis">Some pumpers get stronger bonuses to specific stats</p>
+                            </div>
+                        `;
+                    } else if (cardClass === "All Rounder") {
+                        actionList.innerHTML = `
+                            <div class="action-title">All Rounder Abilities:</div>
+                            <div class="action-badges">
+                                <div class="action-badge">Attack ↑</div>
+                                <div class="action-badge">Attack ↖</div>
+                                <div class="action-badge">Attack ↗</div>
+                            </div>
+                            <div class="action-explanation">
+                                <p><strong>CHOOSE ONE ATTACK DIRECTION PER TURN:</strong></p>
+                                <p>• Attack vertically (directly forward)</p>
+                                <p>• Attack diagonally left (if available)</p>
+                                <p>• Attack diagonally right (if available)</p>
+                                <p class="emphasis">Cannot attack multiple directions in one turn</p>
+                            </div>
+                        `;
+                    } else {
+                        actionList.innerHTML = `
+                            <div class="action-badge">Attack ↑</div>
+                        `;
+                    }
+                }
+            } else {
+                // Carta nella mano
+                actionList.innerHTML = '<div class="action-note">Place on board to use actions</div>';
             }
+        } else if (cardType === 'Champion') {
+            // Per il campione, mostra l'opzione per attivare l'effetto speciale
+            const isPlayer1Champion = card.closest('.player-area.user') !== null;
 
-            if (cardClass === "Defender") {
-                const defend = document.createElement('div');
-                defend.className = 'action-badge';
-                defend.textContent = 'Defend 🛡️';
-                actionList.appendChild(defend);
-            }
+            if (isPlayer1Champion && gameState.currentPhase === PHASES.STRATEGY) {
+                const champion = findChampionByName(cardName);
 
-            if (cardClass === "Pumper") {
-                const pump = document.createElement('div');
-                pump.className = 'action-badge';
-                pump.textContent = 'Pump +1/+1/+1';
-                actionList.appendChild(pump);
+                if (champion) {
+                    const activateButton = document.createElement('button');
+                    activateButton.className = 'champion-action-button clickable';
+                    activateButton.textContent = 'Activate Special Effect';
+
+                    activateButton.addEventListener('click', () => {
+                        activateChampionEffect(champion);
+                        detailViewer.style.display = 'none';
+                    });
+
+                    actionList.appendChild(activateButton);
+
+                    const effectExplanation = document.createElement('div');
+                    effectExplanation.className = 'champion-effect-explanation';
+                    effectExplanation.textContent = champion.effect;
+                    actionList.appendChild(effectExplanation);
+                }
+            } else {
+                actionList.innerHTML = '<div class="action-note">Champion: When its DEF reaches 0, you lose the game</div>';
             }
+        } else {
+            // Spell card
+            actionList.innerHTML = '<div class="action-note">Spells activate automatically during Battle Phase</div>';
         }
     }
 
@@ -2352,6 +3406,42 @@ function logGameEvent(message) {
 
 // Funzione di inizializzazione del flusso di gioco
 function initializeGameFlow() {
+    // Crea l'oggetto per tracciare gli effetti dei campioni
+    gameState.championEffects = {
+        canAttackBlockedChampion: false,
+        splashDamage: false,
+        multiAttack: false,
+        frozenMonsters: []
+    };
+
+    // Aggiungi metodi per gli effetti dei campioni
+    gameState.freezeMonster = function (player, position) {
+        this.championEffects.frozenMonsters.push({ player, position });
+        // Visualizza l'effetto di congelamento
+        const monsterSlot = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .monster-slot[data-position="${position}"]`);
+        if (monsterSlot) {
+            monsterSlot.classList.add('frozen');
+        }
+    };
+
+    gameState.healTarget = function (player, position, amount) {
+        if (position === 1) {
+            // Cura il campione (aumenta la vita della lane)
+            this.players[player].lanes[position] += amount;
+            // Aggiorna l'UI
+            this.updateLaneLabels();
+        } else {
+            // Cura un mostro
+            const monster = this.players[player].board[position];
+            if (monster) {
+                monster.defense += amount;
+                // Aggiorna l'UI
+                this.updateCardStats(player, position, monster);
+            }
+        }
+    };
+
+    // Inizializza il gioco
     gameState.initialize();
 }
 
@@ -2412,8 +3502,27 @@ function setupDragAndDrop() {
         e.preventDefault();
 
         // Controlliamo se il tipo di carta corrisponde al tipo di slot
-        const cardType = window.draggedElement.dataset.cardType;
+        const cardType = window.draggedElement?.dataset?.cardType;
+        if (!cardType) return;
+
         const slotType = this.dataset.slotType;
+        const position = parseInt(this.dataset.position);
+
+        // Blocca il drop nella posizione centrale (champion lane) perché è riservata ai campioni
+        if (position === 1) {
+            this.classList.add('slot-error');
+            return;
+        }
+
+        // Verifica se un mostro può essere sostituito (se c'è già un mostro in quello slot)
+        if (cardType === 'monster' && !this.classList.contains('empty')) {
+            // Se il mostro ha già combattuto, non può essere sostituito
+            const playerIndex = gameState.activePlayer;
+            if (!gameState.canReplaceMonster(playerIndex, position)) {
+                this.classList.add('slot-error');
+                return;
+            }
+        }
 
         // Aggiungi la classe appropriata in base alla compatibilità
         if (cardType === slotType) {
@@ -2442,10 +3551,27 @@ function setupDragAndDrop() {
         this.classList.remove('drag-over');
         this.classList.remove('slot-error');
 
-        const cardType = window.draggedElement.dataset.cardType;
+        const cardType = window.draggedElement?.dataset?.cardType;
+        if (!cardType) return;
+
         const slotType = this.dataset.slotType;
         const cardId = window.draggedElement.dataset.cardId;
-        const position = this.dataset.position;
+        const position = parseInt(this.dataset.position);
+
+        // Blocca il drop nella lane del campione (centro, posizione 1)
+        if (position === 1) {
+            showNotification("Cannot place cards in the Champion Lane. This lane is reserved for Champions only.", "error");
+            return false;
+        }
+
+        // Verifica se un mostro può essere sostituito
+        if (cardType === 'monster' && !this.classList.contains('empty')) {
+            const playerIndex = gameState.activePlayer;
+            if (!gameState.canReplaceMonster(playerIndex, position)) {
+                showNotification("Cannot replace a monster that has already fought in battle.", "error");
+                return false;
+            }
+        }
 
         // Verifica se il tipo di carta è compatibile con lo slot
         if (cardType === slotType) {
@@ -2454,6 +3580,17 @@ function setupDragAndDrop() {
 
             // Rimuovi l'attributo draggable dalla carta sul campo
             cardClone.removeAttribute('draggable');
+
+            // Ottieni riferimento al dettaglio della carta se è visualizzato
+            const detailViewer = document.querySelector('.card-detail-viewer');
+            const isDetailViewerOpen = detailViewer && detailViewer.style.display === 'block';
+
+            // Verifica se stiamo visualizzando i dettagli della carta in questo slot
+            const currentSlot = document.querySelector(`.monster-slot[data-position="${position}"]`);
+            const currentCard = currentSlot ? currentSlot.querySelector('.card') : null;
+            const isViewingThisSlot = isDetailViewerOpen && currentCard &&
+                detailViewer.querySelector('#card-name').textContent ===
+                (currentCard.innerText.split('\n')[0] || '');
 
             // Svuota lo slot e poi aggiungi la carta
             this.textContent = '';
@@ -2467,18 +3604,26 @@ function setupDragAndDrop() {
                 const card = gameState.players[playerIndex].hand[originalCardIndex];
 
                 // Salva la carta nel gameState
-                gameState.players[playerIndex].board[parseInt(position)] = card;
+                gameState.players[playerIndex].board[position] = card;
 
                 // Rimuovi la carta dalla mano nel gameState
                 gameState.players[playerIndex].hand.splice(originalCardIndex, 1);
+
+                // Reset dello stato "ha combattuto" per questa posizione
+                gameState.players[playerIndex].monstersHaveFought[position] = false;
 
                 // Aggiungi event listener per selezionare l'azione
                 cardClone.addEventListener('click', function () {
                     // Se siamo nella fase strategica
                     if (gameState.currentPhase === PHASES.STRATEGY) {
-                        gameState.showActionMenu(playerIndex, parseInt(position), this);
+                        gameState.showActionMenu(playerIndex, position, this);
                     }
                 });
+
+                // Se il dettaglio della carta era aperto per questa posizione, aggiorna il popup
+                if (isViewingThisSlot) {
+                    showCardDetails(cardClone);
+                }
             }
 
             // Quando una magia viene posizionata, registrala nel game state
@@ -2504,7 +3649,7 @@ function setupDragAndDrop() {
 
                 // Salva la carta nel gameState
                 if (card) {
-                    gameState.players[playerIndex].spells[parseInt(position)] = card;
+                    gameState.players[playerIndex].spells[position] = card;
                 }
             }
 
@@ -2553,4 +3698,54 @@ function setupDragAndDrop() {
 
         logGameEvent(`Cards in hand: ${cardsInHand}, Cards on board: ${cardsOnBoard}`);
     }
-} 
+}
+
+// Aggiungi stili CSS per indicare i mostri che hanno combattuto e non possono essere sostituiti
+const foughtMonsterStyles = document.createElement('style');
+foughtMonsterStyles.textContent = `
+    .card.fought {
+        position: relative;
+    }
+    
+    .card.fought::after {
+        content: "⚔️";
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        font-size: 16px;
+        background-color: rgba(255, 0, 0, 0.7);
+        color: white;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 1s infinite alternate;
+    }
+    
+    @keyframes pulse {
+        from { transform: scale(1); }
+        to { transform: scale(1.2); }
+    }
+    
+    .monster-slot:has(.card.fought) {
+        pointer-events: none;
+    }
+    
+    .monster-slot:has(.card.fought):hover::before {
+        content: "This monster has fought and cannot be replaced";
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 10;
+    }
+`;
+document.head.appendChild(foughtMonsterStyles);
