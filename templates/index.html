@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TridimensionalDuels</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Socket.IO client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js"></script>
+</head>
+
+<body>
+    <div class="game-container">
+        <h1>TridimensionalDuels</h1>
+
+        <!-- Player 2 (Opponent) Area -->
+        <div class="player-area opponent">
+            <div class="player-info">
+                <div class="player-name">Player 2</div>
+                <div class="player-resources">
+                    <div class="deck">
+                        <div class="card-back">Deck</div>
+                        <div class="count">10</div>
+                    </div>
+                    <div class="graveyard">
+                        <div class="card-back">Discard</div>
+                        <div class="count">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hand">
+                <div class="card">Card 1</div>
+                <div class="card">Card 2</div>
+                <div class="card">Card 3</div>
+                <div class="card">Card 4</div>
+                <div class="card">Card 5</div>
+            </div>
+
+            <div class="board">
+                <div class="lane-labels">
+                    <div class="lane-label">Side Lane [5]</div>
+                    <div class="lane-label">Champion Lane</div>
+                    <div class="lane-label">Side Lane [5]</div>
+                </div>
+
+                <div class="spell-row">
+                    <div class="spell-slot" data-slot-type="spell" data-position="0">Spell</div>
+                    <div class="spell-slot empty" data-slot-type="spell" data-position="1"></div>
+                    <div class="spell-slot" data-slot-type="spell" data-position="2">Spell</div>
+                </div>
+
+                <div class="monster-row">
+                    <div class="monster-slot" data-slot-type="monster" data-position="0">Monster</div>
+                    <div class="monster-slot champion" data-slot-type="monster" data-position="1">Champion</div>
+                    <div class="monster-slot" data-slot-type="monster" data-position="2">Monster</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game controls moved here, between the two players -->
+        <div class="game-controls">
+            <div class="phase-indicator">Phase: Setup</div>
+            <div class="timer">Time: 30s</div>
+            <button class="action-button" disabled>Waiting...</button>
+        </div>
+
+        <!-- Player 1 (User) Area -->
+        <div class="player-area user">
+            <div class="board">
+                <div class="monster-row">
+                    <div class="monster-slot" data-slot-type="monster" data-position="0">Monster</div>
+                    <div class="monster-slot champion" data-slot-type="monster" data-position="1">Champion</div>
+                    <div class="monster-slot" data-slot-type="monster" data-position="2">Monster</div>
+                </div>
+
+                <div class="spell-row">
+                    <div class="spell-slot" data-slot-type="spell" data-position="0">Spell</div>
+                    <div class="spell-slot empty" data-slot-type="spell" data-position="1"></div>
+                    <div class="spell-slot" data-slot-type="spell" data-position="2">Spell</div>
+                </div>
+
+                <div class="lane-labels">
+                    <div class="lane-label">Side Lane [5]</div>
+                    <div class="lane-label">Champion Lane</div>
+                    <div class="lane-label">Side Lane [5]</div>
+                </div>
+            </div>
+
+            <div class="hand">
+                <div class="card monster-card" draggable="true" data-card-type="monster" data-card-id="defender1">
+                    Defender<div class="card-stats">ATK: 5<br>DEF: 8<br>SPD: 3</div>
+                </div>
+                <div class="card monster-card" draggable="true" data-card-type="monster" data-card-id="pumper1">Pumper
+                    <div class="card-stats">
+                        ATK: 6<br>DEF: 4<br>SPD: 7</div>
+                </div>
+                <div class="card monster-card" draggable="true" data-card-type="monster" data-card-id="all-rounder1">
+                    All-Rounder<div class="card-stats">ATK: 7<br>DEF: 5<br>SPD: 6</div>
+                </div>
+                <div class="card spell-card" draggable="true" data-card-type="spell" data-card-id="fireball1">Fireball
+                    <div class="card-desc">Deal
+                        3 damage</div>
+                </div>
+                <div class="card spell-card" draggable="true" data-card-type="spell" data-card-id="shield1">Shield<div
+                        class="card-desc">+3 DEF
+                    </div>
+                </div>
+                <div class="card spell-card" draggable="true" data-card-type="spell" data-card-id="haste1">Haste<div
+                        class="card-desc">+2 SPD
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-info">
+                <div class="player-resources">
+                    <div class="deck">
+                        <div class="card-back">Deck</div>
+                        <div class="count">10</div>
+                    </div>
+                    <div class="graveyard">
+                        <div class="card-back">Discard</div>
+                        <div class="count">0</div>
+                    </div>
+                </div>
+                <div class="player-name">Player 1</div>
+            </div>
+        </div>
+
+        <!-- Notifiche di gioco -->
+        <div class="game-notifications">
+            <div class="notification-content">Welcome to TridimensionalDuels</div>
+        </div>
+
+        <!-- Pannello informazioni e log -->
+        <div class="game-info-panel">
+            <div class="turn-info">Turn: 1</div>
+            <div class="active-player">Active Player: Player 1</div>
+            <div class="game-log-toggle">Show Game Log</div>
+            <div class="game-log" style="display: none;">
+                <div class="log-entry">Game initialized</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+</body>
+
+</html>
