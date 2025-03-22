@@ -546,12 +546,18 @@ h1 {
 
 /* Player info section */
 .player-info {
-    padding: 7px 12px;
-    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(246, 173, 85, 0.3);
 }
 
 .player-name {
-    font-size: 1.2em;
+    font-size: 1.3em;
     font-weight: 600;
     color: #4FD1C5;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -1150,7 +1156,8 @@ h1 {
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(5px);
-    overflow: hidden;
+    overflow: auto;
+    padding: 20px;
 }
 
 .reveal-cards-container {
@@ -1159,54 +1166,56 @@ h1 {
     border: 3px solid #ED8936;
     width: 90%;
     max-width: 1200px;
-    padding: 20px;
+    padding: 25px;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    max-height: 90vh;
+    gap: 20px;
+    max-height: 85vh;
     overflow-y: auto;
+    margin: 20px auto;
 }
 
 .reveal-cards-container::-webkit-scrollbar {
-    width: 6px;
+    width: 10px;
 }
 
 .reveal-cards-container::-webkit-scrollbar-track {
     background: rgba(26, 32, 44, 0.5);
-    border-radius: 3px;
+    border-radius: 5px;
 }
 
 .reveal-cards-container::-webkit-scrollbar-thumb {
     background-color: rgba(246, 173, 85, 0.6);
-    border-radius: 3px;
+    border-radius: 5px;
 }
 
 .reveal-header {
     text-align: center;
-    font-size: 1.8rem;
+    font-size: 2rem;
     color: #FBD38D;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .reveal-player-section {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .reveal-player-name {
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     color: #4FD1C5;
     border-bottom: 2px solid rgba(79, 209, 197, 0.3);
-    padding-bottom: 6px;
+    padding-bottom: 10px;
 }
 
 .reveal-cards {
     display: flex;
-    gap: 12px;
+    gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -1214,9 +1223,9 @@ h1 {
 .reveal-card {
     transform: scale(1);
     transition: transform 0.3s ease;
-    margin: 5px;
-    width: 120px;
-    height: 170px;
+    margin: 10px;
+    width: 140px;
+    height: 200px;
 }
 
 .reveal-card:hover {
@@ -1227,16 +1236,16 @@ h1 {
 
 .reveal-footer {
     text-align: center;
-    margin-top: 15px;
+    margin-top: 20px;
 }
 
 .reveal-button {
-    padding: 12px 30px;
+    padding: 12px 35px;
     background: linear-gradient(to bottom, #ED8936, #DD6B20);
     color: white;
     border: none;
     border-radius: 30px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1249,77 +1258,42 @@ h1 {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
-/* Mostra azioni nel dettaglio carta */
-.available-actions {
-    margin-top: 10px;
-    padding: 8px;
-    background: rgba(26, 32, 44, 0.5);
-    border-radius: 8px;
-    border: 1px solid rgba(246, 173, 85, 0.3);
+/* Style card effect hover improvements */
+.card-effect {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    right: 5px;
+    font-size: 0.8em;
+    padding: 4px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
 }
 
-.available-actions-title {
-    font-weight: 600;
-    color: #FBD38D;
-    margin-bottom: 6px;
-    text-align: center;
-    font-size: 0.9em;
+.card:hover .card-effect {
+    opacity: 1;
+    white-space: normal;
+    max-height: 80px;
+    overflow-y: auto;
+    z-index: 10;
 }
 
-.action-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-}
-
-.action-badge {
-    background-color: rgba(90, 103, 216, 0.2);
-    border: 1px solid rgba(90, 103, 216, 0.3);
-    border-radius: 12px;
-    padding: 3px 8px;
-    font-size: 0.75em;
-    color: #E9D8FD;
-    transition: all 0.2s ease;
-}
-
-.action-badge:hover {
-    background-color: rgba(90, 103, 216, 0.4);
-    transform: translateY(-2px);
-}
-
-/* Stili per i diversi tipi di carte */
-.card.monster-card.defender {
-    background-image: linear-gradient(45deg, #2B6CB0, #4299E1);
-    border-color: #63B3ED;
-}
-
-.card.monster-card.pumper {
-    background-image: linear-gradient(45deg, #805AD5, #9F7AEA);
-    border-color: #B794F4;
-}
-
-.card.monster-card.all-rounder {
-    background-image: linear-gradient(45deg, #C53030, #F56565);
-    border-color: #FC8181;
-}
-
-.card.monster-card.champion {
-    background-image: linear-gradient(45deg, #C05621, #ED8936);
-    border-color: #F6AD55;
-    box-shadow: 0 0 10px rgba(246, 173, 85, 0.7);
-}
-
-/* Badge per il tipo di mostro */
+/* Card class badge improvements */
 .card-class {
     position: absolute;
-    top: 3px;
-    right: 3px;
-    font-size: 0.7em;
-    padding: 2px 4px;
-    border-radius: 4px;
-    background-color: rgba(0, 0, 0, 0.5);
+    top: 5px;
+    right: 5px;
+    font-size: 0.8em;
+    padding: 3px 6px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.6);
     color: #F7FAFC;
+    font-weight: 600;
 }
 
 /* Stili per gli effetti delle carte */
@@ -1855,7 +1829,7 @@ h1 {
 /* Resources (deck/discard) styling */
 .resources {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: center;
 }
 
@@ -1863,12 +1837,12 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
 }
 
 .resource-icon {
-    width: 60px;
-    height: 80px;
+    width: 70px;
+    height: 90px;
     border-radius: 8px;
     background: linear-gradient(135deg, #553C9A, #805AD5);
     display: flex;
@@ -1878,7 +1852,7 @@ h1 {
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #F7FAFC;
     font-weight: bold;
-    font-size: 0.9em;
+    font-size: 1em;
     transition: all 0.3s ease;
 }
 
@@ -1889,46 +1863,48 @@ h1 {
 }
 
 .resource-count {
-    font-size: 0.9em;
+    font-size: 1.1em;
     font-weight: 600;
     color: #F7FAFC;
+    text-align: center;
 }
 
 /* Important phase info box adjustments */
 .phase-info-sidebar {
     position: fixed;
-    top: 15px;
-    right: 15px;
-    width: 250px;
+    top: 20px;
+    right: 20px;
+    width: 280px;
     background: rgba(26, 32, 44, 0.9);
-    border-radius: 10px;
+    border-radius: 12px;
     border: 2px solid #ED8936;
-    padding: 12px;
+    padding: 15px;
     color: white;
-    font-size: 0.9em;
-    line-height: 1.4;
+    font-size: 1em;
+    line-height: 1.5;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     z-index: 100;
 }
 
 .phase-info-sidebar h3 {
     color: #F6AD55;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     text-align: center;
-    font-size: 1.1em;
+    font-size: 1.2em;
     border-bottom: 1px solid rgba(246, 173, 85, 0.4);
-    padding-bottom: 5px;
+    padding-bottom: 8px;
 }
 
 .phase-info-sidebar ul {
     list-style: none;
     padding-left: 0;
+    margin: 0;
 }
 
 .phase-info-sidebar li {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     position: relative;
-    padding-left: 15px;
+    padding-left: 18px;
 }
 
 .phase-info-sidebar li:before {
@@ -1936,6 +1912,7 @@ h1 {
     color: #F6AD55;
     position: absolute;
     left: 0;
+    font-size: 1.2em;
 }
 
 /* Better buttons for deck and discard */
@@ -1981,16 +1958,17 @@ h1 {
     justify-content: space-between;
     align-items: center;
     background: linear-gradient(to right, rgba(15, 23, 42, 0.7), rgba(237, 137, 54, 0.25), rgba(15, 23, 42, 0.7));
-    border-radius: 40px;
+    border-radius: 30px;
     border: 2px solid #ED8936;
-    padding: 8px 20px;
-    width: max-content;
-    margin: 8px auto;
+    padding: 10px 25px;
+    width: 500px;
+    margin: 15px auto;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 5;
 }
 
 .phase-text {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #F6AD55;
     margin-right: 20px;
@@ -1998,7 +1976,7 @@ h1 {
 }
 
 .timer-text {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #4FD1C5;
     margin: 0 20px;
@@ -2010,8 +1988,8 @@ h1 {
     color: white;
     border: none;
     border-radius: 30px;
-    padding: 7px 20px;
-    font-size: 0.9rem;
+    padding: 8px 25px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
