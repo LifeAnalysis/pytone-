@@ -7,43 +7,45 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1E293B;
-    /* Dark slate background */
-    color: white;
-    padding: 30px;
-    line-height: 1.6;
+    background: linear-gradient(135deg, #2D3748, #1A202C);
+    color: #F7FAFC;
+    padding: 0;
+    line-height: 1.5;
     perspective: 1000px;
-    /* Per effetti 3D */
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .game-container {
-    max-width: 1100px;
-    margin: 0 auto;
+    width: 98vw;
+    min-height: 98vh;
+    margin: 10px auto;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 15px;
     padding: 15px;
     position: relative;
 }
 
 h1 {
     text-align: center;
-    color: #7C3AED;
-    /* Slightly softer purple */
-    margin-bottom: 25px;
-    font-weight: 500;
+    color: #FBD38D;
+    margin-bottom: 15px;
+    font-weight: 700;
     letter-spacing: 1px;
-    text-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+    text-shadow: 0 2px 10px rgba(246, 173, 85, 0.4);
     animation: glow 3s ease-in-out infinite alternate;
+    font-size: 2.2rem;
 }
 
 @keyframes glow {
     from {
-        text-shadow: 0 0 5px rgba(124, 58, 237, 0.3), 0 0 10px rgba(124, 58, 237, 0.2);
+        text-shadow: 0 0 5px rgba(251, 211, 141, 0.3), 0 0 10px rgba(251, 211, 141, 0.2);
     }
 
     to {
-        text-shadow: 0 0 10px rgba(124, 58, 237, 0.5), 0 0 20px rgba(124, 58, 237, 0.3);
+        text-shadow: 0 0 10px rgba(251, 211, 141, 0.5), 0 0 20px rgba(251, 211, 141, 0.3);
     }
 }
 
@@ -51,24 +53,30 @@ h1 {
 .player-area {
     display: flex;
     flex-direction: column;
-    gap: 25px;
-    padding: 10px;
-    border-radius: 16px;
-    background-color: rgba(30, 41, 59, 0.5);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    transition: all 0.4s ease;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 12px;
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.7), rgba(26, 32, 44, 0.7));
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+    height: auto;
+    margin-bottom: 10px;
 }
 
 .opponent {
     order: 1;
+    margin-bottom: 10px;
+}
+
+.opponent .hand {
+    min-height: 140px;
 }
 
 .divider {
     height: 3px;
-    background: linear-gradient(to right, transparent, #00BFA5, transparent);
+    background: linear-gradient(to right, transparent, #F6AD55, transparent);
     border-radius: 50%;
     margin: 10px 0;
-    order: 2;
     position: relative;
     overflow: hidden;
 }
@@ -80,8 +88,8 @@ h1 {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    animation: shine 3s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    animation: shine 2.5s infinite;
 }
 
 @keyframes shine {
@@ -92,43 +100,61 @@ h1 {
 
 .user {
     order: 3;
+    margin-top: 10px;
+}
+
+.user .hand {
+    min-height: 180px;
 }
 
 /* Board layout */
 .board {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    border: 3px solid rgba(124, 58, 237, 0.4);
-    border-radius: 16px;
-    padding: 20px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.4));
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    transition: all 0.4s ease;
+    gap: 12px;
+    border: 3px solid rgba(246, 173, 85, 0.4);
+    border-radius: 12px;
+    padding: 15px;
+    background: linear-gradient(to bottom, rgba(44, 55, 72, 0.8), rgba(26, 32, 44, 0.8));
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    flex: 1;
+    margin: 15px 0;
 }
 
 .lane-labels {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 15px;
+    gap: 10px;
     text-align: center;
+    margin-bottom: 10px;
 }
 
 .lane-label {
     padding: 8px;
-    font-size: 1em;
-    color: #FFD740;
-    opacity: 0.9;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    font-size: 1.1em;
+    color: #FBD38D;
+    opacity: 0.95;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(246, 173, 85, 0.3);
+}
+
+.lane-label.champion {
+    color: #F6AD55;
+    border-color: rgba(246, 173, 85, 0.6);
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.2), rgba(237, 137, 54, 0.2), rgba(0, 0, 0, 0.2));
 }
 
 .monster-row,
 .spell-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 15px;
-    height: 130px;
+    gap: 10px;
+    height: 160px;
+    margin-bottom: 15px;
 }
 
 .monster-slot,
@@ -136,32 +162,33 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(255, 255, 255, 0.07);
-    border: 2px solid rgba(124, 58, 237, 0.3);
-    border-radius: 12px;
-    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(246, 173, 85, 0.25);
+    border-radius: 10px;
+    padding: 8px;
     text-align: center;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     position: relative;
     transform-style: preserve-3d;
     cursor: pointer;
+    height: 100%;
 }
 
 .monster-slot {
-    border-color: rgba(30, 64, 175, 0.5);
+    border-color: rgba(66, 153, 225, 0.4);
     /* Blue for Monsters */
 }
 
 .spell-slot {
-    border-color: rgba(126, 34, 206, 0.5);
+    border-color: rgba(183, 148, 244, 0.4);
     /* Purple for Spells */
 }
 
 .monster-slot:hover,
 .spell-slot:hover {
     background-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-3px) scale(1.05);
+    transform: translateY(-3px) scale(1.03);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
@@ -170,34 +197,34 @@ h1 {
     content: '';
     position: absolute;
     inset: -2px;
-    border-radius: 14px;
-    background: linear-gradient(45deg, #7C3AED, #00BFA5, #FFD740, #7C3AED);
-    background-size: 400%;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #B794F4, #4FD1C5, #FBD38D, #B794F4);
+    background-size: 300%;
     z-index: -1;
     filter: blur(5px);
-    animation: border-glow 4s linear infinite;
+    animation: border-glow 3s linear infinite;
 }
 
 /* Dragover effects */
 .monster-slot.drag-over {
-    background-color: rgba(30, 64, 175, 0.2);
+    background-color: rgba(66, 153, 225, 0.2);
     /* Blue glow for Monsters */
-    box-shadow: 0 0 20px rgba(30, 64, 175, 0.6);
-    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.6);
+    transform: translateY(-3px) scale(1.03);
 }
 
 .spell-slot.drag-over {
-    background-color: rgba(126, 34, 206, 0.2);
+    background-color: rgba(183, 148, 244, 0.2);
     /* Purple glow for Spells */
-    box-shadow: 0 0 20px rgba(126, 34, 206, 0.6);
-    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 0 15px rgba(183, 148, 244, 0.6);
+    transform: translateY(-3px) scale(1.03);
 }
 
 .slot-error {
     animation: shake 0.5s ease-in-out;
-    box-shadow: 0 0 20px rgba(220, 38, 38, 0.7) !important;
+    box-shadow: 0 0 15px rgba(245, 101, 101, 0.7) !important;
     /* Red glow for errors */
-    border-color: rgba(220, 38, 38, 0.8) !important;
+    border-color: rgba(245, 101, 101, 0.8) !important;
 }
 
 @keyframes shake {
@@ -235,14 +262,14 @@ h1 {
 }
 
 .empty {
-    background-color: transparent;
-    border: 2px dashed rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.3);
     box-shadow: none;
 }
 
 .empty:hover {
-    background-color: transparent;
+    background-color: rgba(255, 255, 255, 0.05);
     transform: none;
     box-shadow: none;
 }
@@ -252,19 +279,19 @@ h1 {
 }
 
 .champion {
-    background: linear-gradient(to bottom right, rgba(180, 83, 9, 0.3), rgba(240, 140, 10, 0.2));
-    border: 2px solid rgba(180, 83, 9, 0.6);
-    box-shadow: 0 4px 10px rgba(180, 83, 9, 0.2);
+    background: linear-gradient(to bottom right, rgba(246, 173, 85, 0.3), rgba(237, 137, 54, 0.2));
+    border: 2px solid rgba(246, 173, 85, 0.6);
+    box-shadow: 0 4px 10px rgba(246, 173, 85, 0.2);
 }
 
 .champion:hover {
-    box-shadow: 0 10px 20px rgba(180, 83, 9, 0.3);
+    box-shadow: 0 8px 15px rgba(246, 173, 85, 0.3);
 }
 
 .champion:hover::before {
-    background: linear-gradient(45deg, #B45309, #FFD740, #B45309, #FFD740);
-    background-size: 400%;
-    animation: border-glow 4s linear infinite;
+    background: linear-gradient(45deg, #ED8936, #F6AD55, #ED8936, #F6AD55);
+    background-size: 300%;
+    animation: border-glow 3s linear infinite;
 }
 
 /* Hand styles */
@@ -273,41 +300,42 @@ h1 {
     gap: 15px;
     overflow-x: auto;
     padding: 15px;
-    min-height: 160px;
-    border-radius: 12px;
+    min-height: 180px;
+    border-radius: 10px;
     background-color: rgba(0, 0, 0, 0.2);
     scrollbar-width: thin;
-    scrollbar-color: rgba(124, 58, 237, 0.6) rgba(0, 0, 0, 0.2);
+    scrollbar-color: rgba(183, 148, 244, 0.6) rgba(0, 0, 0, 0.2);
     perspective: 1000px;
-    /* Per effetti 3D */
+    flex-shrink: 0;
+    margin-bottom: 10px;
 }
 
 .hand::-webkit-scrollbar {
-    height: 8px;
+    height: 6px;
 }
 
 .hand::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 .hand::-webkit-scrollbar-thumb {
-    background-color: rgba(124, 58, 237, 0.6);
-    border-radius: 4px;
+    background-color: rgba(183, 148, 244, 0.6);
+    border-radius: 3px;
 }
 
 .card {
-    width: 100px;
-    height: 140px;
-    border-radius: 15px;
+    width: 120px;
+    height: 160px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
     flex-shrink: 0;
     cursor: pointer;
-    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
     transform-style: preserve-3d;
     position: relative;
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -315,27 +343,129 @@ h1 {
     font-weight: 500;
     padding: 10px 5px;
     text-align: center;
+    will-change: transform;
 }
 
-.monster-card {
-    background: linear-gradient(45deg, #1E3A8A, #1E40AF);
-    /* Blue gradient for Monsters */
+.monster-card .card-name {
+    font-size: 1.2em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+    color: #F7FAFC;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.monster-card.defender {
+    background-image: linear-gradient(45deg, #2B6CB0, #4299E1);
+    border-color: #63B3ED;
+}
+
+.monster-card.pumper {
+    background-image: linear-gradient(45deg, #805AD5, #9F7AEA);
+    border-color: #B794F4;
+}
+
+.monster-card.all-rounder {
+    background-image: linear-gradient(45deg, #C53030, #F56565);
+    border-color: #FC8181;
+}
+
+.monster-card.champion {
+    background-image: linear-gradient(45deg, #C05621, #ED8936);
+    border-color: #F6AD55;
+    box-shadow: 0 0 10px rgba(246, 173, 85, 0.7);
+}
+
+/* Monster card stats display */
+.monster-stats {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.monster-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.monster-stat-label {
+    font-size: 0.7em;
+    opacity: 0.9;
+}
+
+.monster-stat-value {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.monster-stat.atk .monster-stat-value {
+    color: #FC8181;
+}
+
+.monster-stat.def .monster-stat-value {
+    color: #90CDF4;
+}
+
+.monster-stat.spd .monster-stat-value {
+    color: #9AE6B4;
+}
+
+/* Unknown cards for opponent monsters */
+.unknown-monster {
+    background: linear-gradient(45deg, #2D3748, #4A5568);
+    border-color: #A0AEC0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.unknown-monster::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(45deg,
+            rgba(0, 0, 0, 0.1),
+            rgba(0, 0, 0, 0.1) 10px,
+            rgba(0, 0, 0, 0.2) 10px,
+            rgba(0, 0, 0, 0.2) 20px);
+    border-radius: 10px;
+    opacity: 0.6;
+}
+
+.unknown-monster-text {
+    font-size: 1em;
+    font-weight: 600;
+    color: #F7FAFC;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 1;
 }
 
 .spell-card {
-    background: linear-gradient(45deg, #5B21B6, #7E22CE);
-    /* Purple gradient for Spells */
+    background-image: linear-gradient(45deg, #5A67D8, #667EEA);
+    border-color: #7F9CF5;
+}
+
+.spell-card .card-desc {
+    font-size: 0.8em;
+    line-height: 1.2;
+    margin-top: 5px;
 }
 
 .card.dragging {
     opacity: 0.7;
     transform: scale(0.95);
-    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
 }
 
 .card:hover {
-    transform: translateY(-15px) scale(1.1) rotateY(15deg);
-    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(124, 58, 237, 0.5);
+    transform: translateY(-15px) scale(1.1) rotateX(5deg) rotateY(15deg) rotateZ(-2deg);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(246, 173, 85, 0.4);
     border-color: rgba(255, 255, 255, 0.3);
     z-index: 10;
 }
@@ -344,8 +474,8 @@ h1 {
     content: '';
     position: absolute;
     inset: -2px;
-    border-radius: 15px;
-    background: linear-gradient(45deg, #1E3A8A, #3B82F6, #1E3A8A);
+    border-radius: 12px;
+    background: linear-gradient(45deg, #2B6CB0, #63B3ED, #2B6CB0);
     background-size: 300%;
     opacity: 0;
     z-index: -1;
@@ -357,8 +487,8 @@ h1 {
     content: '';
     position: absolute;
     inset: -2px;
-    border-radius: 15px;
-    background: linear-gradient(45deg, #5B21B6, #8B5CF6, #5B21B6);
+    border-radius: 12px;
+    background: linear-gradient(45deg, #805AD5, #B794F4, #805AD5);
     background-size: 300%;
     opacity: 0;
     z-index: -1;
@@ -374,9 +504,9 @@ h1 {
 .card-stats,
 .card-desc {
     font-size: 0.8em;
-    margin-top: 10px;
-    line-height: 1.3;
-    opacity: 0.9;
+    margin-top: 8px;
+    line-height: 1.2;
+    opacity: 0.95;
 }
 
 @keyframes border-shine {
@@ -396,45 +526,46 @@ h1 {
 /* Card on board styling */
 .monster-slot .card,
 .spell-slot .card {
-    width: 90%;
-    height: 90%;
+    width: 95%;
+    height: 95%;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
     transform: none !important;
+    transition: all 0.3s ease;
 }
 
 .monster-slot .card:hover,
 .spell-slot .card:hover {
-    transform: scale(1.05) !important;
+    transform: scale(1.05) rotateY(5deg) !important;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(246, 173, 85, 0.3);
 }
 
 /* Player info section */
 .player-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    padding: 7px 12px;
+    margin-bottom: 5px;
 }
 
 .player-name {
-    font-size: 1.3em;
-    font-weight: 500;
+    font-size: 1.2em;
+    font-weight: 600;
     color: #4FD1C5;
-    /* Softer teal */
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
 }
 
 .player-info:hover .player-name {
     color: #7EEADC;
-    text-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
+    text-shadow: 0 0 8px rgba(79, 209, 197, 0.5);
 }
 
 .player-resources {
     display: flex;
-    gap: 30px;
+    gap: 20px;
 }
 
 .deck,
@@ -442,19 +573,19 @@ h1 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     transition: all 0.3s ease;
 }
 
 .card-back {
-    width: 70px;
-    height: 90px;
-    background: linear-gradient(135deg, #4C1D95, #6D28D9);
-    border-radius: 10px;
+    width: 60px;
+    height: 80px;
+    background: linear-gradient(135deg, #553C9A, #805AD5);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9em;
+    font-size: 0.8em;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
@@ -462,13 +593,13 @@ h1 {
 }
 
 .card-back:hover {
-    transform: scale(1.1) rotateY(-15deg);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1) rotateY(-10deg);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
 .count {
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
     transition: color 0.3s ease;
@@ -476,34 +607,19 @@ h1 {
 
 .deck:hover .count,
 .graveyard:hover .count {
-    color: #FFD740;
+    color: #FBD38D;
 }
 
-/* Game controls - modificato per essere al centro */
+/* Game controls */
 .game-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: linear-gradient(to right, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.8));
-    border-radius: 16px;
-    order: 2;
-    /* Posiziona tra i due campi dei giocatori */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-    transition: all 0.3s ease;
-    margin: 0 auto;
-    width: 90%;
-    max-width: 700px;
-    border: 2px solid rgba(124, 58, 237, 0.5);
-    margin: 20px auto;
-    position: relative;
-    z-index: 10;
+    padding: 10px 20px;
+    margin: 3px auto;
 }
 
 .phase-indicator,
 .timer {
-    font-size: 1.5em;
-    color: #FFD740;
+    font-size: 1.4em;
+    color: #FBD38D;
     opacity: 1;
     text-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
     font-weight: 600;
@@ -512,43 +628,53 @@ h1 {
 
 .game-controls:hover .phase-indicator,
 .game-controls:hover .timer {
-    text-shadow: 0 0 15px rgba(255, 215, 64, 0.6);
+    text-shadow: 0 0 12px rgba(251, 211, 141, 0.6);
 }
 
 .action-button {
-    padding: 12px 30px;
-    background: linear-gradient(to bottom, #00BFA5, #009688);
+    padding: 10px 25px;
+    background: linear-gradient(to bottom, #38B2AC, #319795);
     color: white;
     border: none;
     border-radius: 25px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 1.1em;
+    font-size: 1em;
     letter-spacing: 0.5px;
-    box-shadow: 0 6px 15px rgba(0, 191, 165, 0.4);
+    box-shadow: 0 6px 12px rgba(56, 178, 172, 0.4);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
     z-index: 1;
 }
 
+.action-button:hover {
+    background: linear-gradient(to bottom, #4FD1C5, #38B2AC);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(56, 178, 172, 0.5);
+}
+
+.action-button:active {
+    transform: translateY(1px);
+}
+
 /* Timer quando c'è poco tempo */
 .timer.low-time {
-    color: #F87171;
-    font-size: 1.7em;
+    color: #FC8181;
+    font-size: 1.5em;
     animation: pulse-warning 1s infinite alternate;
-    text-shadow: 0 0 15px rgba(248, 113, 113, 0.7);
+    text-shadow: 0 0 12px rgba(252, 129, 129, 0.7);
 }
 
 @keyframes pulse-warning {
     from {
-        opacity: 0.7;
+        opacity: 0.8;
         transform: scale(1);
     }
 
     to {
         opacity: 1;
-        transform: scale(1.1);
+        transform: scale(1.08);
     }
 }
 
@@ -558,17 +684,17 @@ h1 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(248, 113, 113, 0.9);
+    background-color: rgba(252, 129, 129, 0.9);
     color: white;
-    padding: 20px 40px;
+    padding: 15px 30px;
     border-radius: 30px;
-    font-size: 2em;
+    font-size: 1.8em;
     font-weight: 700;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     z-index: 1001;
     animation: pulse-fade 2s forwards;
     text-align: center;
-    border: 3px solid #FFD740;
+    border: 3px solid #FBD38D;
 }
 
 @keyframes pulse-fade {
@@ -599,26 +725,26 @@ h1 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(15, 23, 42, 0.95);
-    border-radius: 12px;
-    padding: 15px;
+    background-color: rgba(44, 55, 72, 0.95);
+    border-radius: 10px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     z-index: 100;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-    min-width: 150px;
-    border: 2px solid rgba(124, 58, 237, 0.6);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    min-width: 140px;
+    border: 2px solid rgba(246, 173, 85, 0.5);
     backdrop-filter: blur(5px);
 }
 
 .action-menu .action-button {
-    background: linear-gradient(to bottom, #4F46E5, #4338CA);
+    background: linear-gradient(to bottom, #5A67D8, #4C51BF);
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 10px 15px;
-    font-size: 0.9rem;
+    padding: 8px 12px;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -627,7 +753,7 @@ h1 {
 }
 
 .action-menu .action-button:hover {
-    background: linear-gradient(to bottom, #6366F1, #4F46E5);
+    background: linear-gradient(to bottom, #667EEA, #5A67D8);
     transform: translateY(-2px);
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
 }
@@ -641,32 +767,33 @@ h1 {
     display: block;
     text-align: center;
     font-weight: 700;
-    font-size: 1.1rem;
-    color: #FFD740;
-    margin-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 215, 64, 0.3);
-    padding-bottom: 8px;
+    font-size: 1rem;
+    color: #FBD38D;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(251, 211, 141, 0.3);
+    padding-bottom: 6px;
 }
 
 /* Game notifications */
 .game-notifications {
     display: flex;
     justify-content: center;
-    padding: 10px;
-    margin-top: 10px;
+    padding: 8px;
+    margin-top: 5px;
     order: 5;
 }
 
 .notification-content {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(44, 55, 72, 0.7);
     color: white;
-    padding: 12px 20px;
+    padding: 10px 18px;
     border-radius: 50px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     font-weight: 500;
     animation: notification-fadeIn 0.5s ease-out;
     transition: all 0.3s ease;
-    border: 1px solid rgba(124, 58, 237, 0.3);
+    border: 1px solid rgba(246, 173, 85, 0.3);
+    font-size: 0.9em;
 }
 
 @keyframes notification-fadeIn {
@@ -682,18 +809,18 @@ h1 {
 }
 
 .notification-content.success {
-    border-color: rgba(0, 191, 165, 0.5);
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 191, 165, 0.2), rgba(0, 0, 0, 0.6));
+    border-color: rgba(56, 178, 172, 0.5);
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.7), rgba(56, 178, 172, 0.2), rgba(44, 55, 72, 0.7));
 }
 
 .notification-content.warning {
-    border-color: rgba(255, 215, 64, 0.5);
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(255, 215, 64, 0.2), rgba(0, 0, 0, 0.6));
+    border-color: rgba(251, 211, 141, 0.5);
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.7), rgba(251, 211, 141, 0.2), rgba(44, 55, 72, 0.7));
 }
 
 .notification-content.error {
-    border-color: rgba(220, 38, 38, 0.5);
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(220, 38, 38, 0.2), rgba(0, 0, 0, 0.6));
+    border-color: rgba(245, 101, 101, 0.5);
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.7), rgba(245, 101, 101, 0.2), rgba(44, 55, 72, 0.7));
 }
 
 /* Game info panel */
@@ -701,19 +828,20 @@ h1 {
     order: 6;
     display: flex;
     flex-wrap: wrap;
-    padding: 10px 15px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 12px;
-    margin-top: 10px;
-    font-size: 0.9em;
+    padding: 8px 12px;
+    background-color: rgba(44, 55, 72, 0.5);
+    border-radius: 10px;
+    margin-top: 5px;
+    font-size: 0.85em;
     transition: all 0.3s ease;
+    border: 1px solid rgba(246, 173, 85, 0.2);
 }
 
 .turn-info,
 .active-player {
-    margin-right: 20px;
-    color: #FFD740;
-    opacity: 0.8;
+    margin-right: 15px;
+    color: #FBD38D;
+    opacity: 0.9;
 }
 
 .game-log-toggle {
@@ -730,32 +858,33 @@ h1 {
 
 .game-log {
     width: 100%;
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
-    margin-top: 10px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
+    margin-top: 8px;
+    padding: 8px;
+    background-color: rgba(26, 32, 44, 0.5);
     border-radius: 8px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(124, 58, 237, 0.6) rgba(0, 0, 0, 0.2);
+    scrollbar-color: rgba(183, 148, 244, 0.6) rgba(26, 32, 44, 0.5);
+    font-size: 0.9em;
 }
 
 .game-log::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
 }
 
 .game-log::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 3px;
 }
 
 .game-log::-webkit-scrollbar-thumb {
-    background-color: rgba(124, 58, 237, 0.6);
-    border-radius: 4px;
+    background-color: rgba(183, 148, 244, 0.6);
+    border-radius: 3px;
 }
 
 .log-entry {
-    padding: 4px 0;
+    padding: 3px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -769,47 +898,47 @@ h1 {
 .phase-battle .phase-indicator,
 .phase-end .phase-indicator {
     font-weight: bold;
-    font-size: 1.3em;
+    font-size: 1.2em;
 }
 
 .phase-draw .phase-indicator {
-    color: #60A5FA;
+    color: #90CDF4;
     /* Blue for Draw Phase */
 }
 
 .phase-strategy .phase-indicator {
-    color: #34D399;
+    color: #9AE6B4;
     /* Green for Strategy Phase */
 }
 
 .phase-battle .phase-indicator {
-    color: #F87171;
+    color: #FEB2B2;
     /* Red for Battle Phase */
 }
 
 .phase-end .phase-indicator {
-    color: #A78BFA;
+    color: #D6BCFA;
     /* Purple for End Phase */
 }
 
 /* Active player highlighting */
 .player-area.active {
-    box-shadow: 0 0 20px rgba(255, 215, 64, 0.4);
-    border: 2px solid rgba(255, 215, 64, 0.5);
+    box-shadow: 0 0 15px rgba(251, 211, 141, 0.5);
+    border: 2px solid rgba(251, 211, 141, 0.6);
 }
 
 /* Card Detail Viewer */
 .card-detail-viewer {
     position: fixed;
     top: 50%;
-    right: 30px;
+    right: 20px;
     transform: translateY(-50%);
-    width: 280px;
-    background: rgba(22, 30, 46, 0.95);
-    border-radius: 16px;
-    border: 2px solid rgba(124, 58, 237, 0.4);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-    padding: 20px;
+    width: 250px;
+    background: linear-gradient(135deg, rgba(44, 55, 72, 0.95), rgba(26, 32, 44, 0.95));
+    border-radius: 12px;
+    border: 2px solid rgba(246, 173, 85, 0.4);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    padding: 15px;
     z-index: 1000;
     display: none;
     animation: slide-in 0.3s ease-out;
@@ -830,32 +959,32 @@ h1 {
 
 .detail-header {
     text-align: center;
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 600;
-    color: #7C3AED;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+    color: #FBD38D;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(251, 211, 141, 0.3);
 }
 
 .detail-content {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .detail-name,
 .detail-type {
-    font-size: 1.1em;
+    font-size: 1em;
 }
 
 .detail-stats {
     display: flex;
     justify-content: space-between;
-    margin: 10px 0;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 8px;
 }
 
 .stat-atk,
@@ -865,64 +994,146 @@ h1 {
 }
 
 .stat-atk {
-    color: #F87171;
+    color: #FEB2B2;
     /* Red for ATK */
 }
 
 .stat-def {
-    color: #60A5FA;
+    color: #90CDF4;
     /* Blue for DEF */
 }
 
 .stat-spd {
-    color: #34D399;
+    color: #9AE6B4;
     /* Green for SPD */
 }
 
 .detail-desc {
-    margin-top: 5px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    line-height: 1.5;
+    margin-top: 4px;
+    padding: 8px;
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 8px;
+    line-height: 1.4;
+    font-size: 0.9em;
 }
 
 .detail-close {
     text-align: center;
-    margin-top: 15px;
-    padding: 8px;
-    background: rgba(124, 58, 237, 0.2);
-    border-radius: 8px;
+    margin-top: 12px;
+    padding: 6px;
+    background: rgba(246, 173, 85, 0.2);
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .detail-close:hover {
-    background: rgba(124, 58, 237, 0.4);
+    background: rgba(246, 173, 85, 0.4);
 }
 
 /* Phase Info Box */
 .phase-info-box {
     position: fixed;
     top: 20px;
-    right: 30px;
-    width: 250px;
-    background: rgba(22, 30, 46, 0.8);
-    border-radius: 16px;
-    border: 1px solid;
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-    padding: 10px;
-    z-index: 10;
+    right: 20px;
+    width: 260px;
+    background: linear-gradient(135deg, rgba(44, 55, 72, 0.9), rgba(26, 32, 44, 0.9));
+    border-radius: 12px;
+    border: 2px solid rgba(246, 173, 85, 0.4);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    z-index: 20;
     backdrop-filter: blur(3px);
-    max-height: 150px;
+    max-height: 180px;
     overflow-y: auto;
     transition: all 0.3s ease;
-    opacity: 0.7;
-    font-size: 0.85em;
+    opacity: 0.9;
+    font-size: 0.9em;
 }
 
 .phase-info-box:hover {
     opacity: 1;
+    border-color: rgba(246, 173, 85, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.phase-info-box .phase-title {
+    color: #F6AD55;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(246, 173, 85, 0.3);
+    text-align: center;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.phase-info-box .phase-instruction {
+    margin-bottom: 6px;
+    color: #F7FAFC;
+    line-height: 1.4;
+}
+
+.phase-info-box .phase-instruction:last-child {
+    margin-bottom: 0;
+}
+
+/* Beautiful phase controls centered */
+.phase-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.8), rgba(237, 137, 54, 0.2), rgba(44, 55, 72, 0.8));
+    border-radius: 30px;
+    padding: 10px 25px;
+    margin: 10px auto;
+    border: 2px solid rgba(246, 173, 85, 0.5);
+    width: max-content;
+    min-width: 350px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.phase-name {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #FBD38D;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    min-width: 120px;
+}
+
+.phase-timer {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #4FD1C5;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    margin: 0 20px;
+}
+
+.phase-timer.urgent {
+    color: #FC8181;
+    animation: pulse-warning 1s infinite alternate;
+}
+
+.end-phase-btn {
+    padding: 8px 20px;
+    background: linear-gradient(to bottom, #ED8936, #DD6B20);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    min-width: 120px;
+    text-align: center;
+}
+
+.end-phase-btn:hover {
+    background: linear-gradient(to bottom, #F6AD55, #ED8936);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Visualizzazione carte all'inizio */
@@ -939,57 +1150,79 @@ h1 {
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(5px);
+    overflow: hidden;
 }
 
 .reveal-cards-container {
-    background-color: rgba(30, 41, 59, 0.95);
-    border-radius: 20px;
-    border: 3px solid #7C3AED;
+    background: linear-gradient(135deg, rgba(44, 55, 72, 0.95), rgba(26, 32, 44, 0.95));
+    border-radius: 16px;
+    border: 3px solid #ED8936;
     width: 90%;
-    max-width: 1000px;
-    padding: 25px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    max-width: 1200px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 15px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.reveal-cards-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.reveal-cards-container::-webkit-scrollbar-track {
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 3px;
+}
+
+.reveal-cards-container::-webkit-scrollbar-thumb {
+    background-color: rgba(246, 173, 85, 0.6);
+    border-radius: 3px;
 }
 
 .reveal-header {
     text-align: center;
     font-size: 1.8rem;
-    color: #FFD740;
+    color: #FBD38D;
     font-weight: 700;
     margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .reveal-player-section {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
 }
 
 .reveal-player-name {
     font-size: 1.4rem;
     color: #4FD1C5;
     border-bottom: 2px solid rgba(79, 209, 197, 0.3);
-    padding-bottom: 8px;
+    padding-bottom: 6px;
 }
 
 .reveal-cards {
     display: flex;
-    gap: 15px;
+    gap: 12px;
     flex-wrap: wrap;
     justify-content: center;
 }
 
 .reveal-card {
-    transform: scale(1.1);
+    transform: scale(1);
     transition: transform 0.3s ease;
+    margin: 5px;
+    width: 120px;
+    height: 170px;
 }
 
 .reveal-card:hover {
-    transform: scale(1.3);
+    transform: scale(1.2) rotateY(10deg);
     z-index: 5;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
 
 .reveal-footer {
@@ -999,7 +1232,7 @@ h1 {
 
 .reveal-button {
     padding: 12px 30px;
-    background: linear-gradient(to bottom, #7C3AED, #6D28D9);
+    background: linear-gradient(to bottom, #ED8936, #DD6B20);
     color: white;
     border: none;
     border-radius: 30px;
@@ -1007,93 +1240,94 @@ h1 {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 .reveal-button:hover {
-    background: linear-gradient(to bottom, #8B5CF6, #7C3AED);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(to bottom, #F6AD55, #ED8936);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Mostra azioni nel dettaglio carta */
 .available-actions {
-    margin-top: 15px;
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    border: 1px solid rgba(124, 58, 237, 0.3);
+    margin-top: 10px;
+    padding: 8px;
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(246, 173, 85, 0.3);
 }
 
 .available-actions-title {
     font-weight: 600;
-    color: #FFD740;
-    margin-bottom: 8px;
+    color: #FBD38D;
+    margin-bottom: 6px;
     text-align: center;
+    font-size: 0.9em;
 }
 
 .action-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
 }
 
 .action-badge {
-    background-color: rgba(79, 70, 229, 0.2);
-    border: 1px solid rgba(79, 70, 229, 0.3);
-    border-radius: 15px;
-    padding: 4px 10px;
-    font-size: 0.8em;
-    color: #E0E7FF;
+    background-color: rgba(90, 103, 216, 0.2);
+    border: 1px solid rgba(90, 103, 216, 0.3);
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 0.75em;
+    color: #E9D8FD;
     transition: all 0.2s ease;
 }
 
 .action-badge:hover {
-    background-color: rgba(79, 70, 229, 0.4);
+    background-color: rgba(90, 103, 216, 0.4);
     transform: translateY(-2px);
 }
 
 /* Stili per i diversi tipi di carte */
 .card.monster-card.defender {
-    background-image: linear-gradient(45deg, #1E40AF, #3B82F6);
-    border-color: #3B82F6;
+    background-image: linear-gradient(45deg, #2B6CB0, #4299E1);
+    border-color: #63B3ED;
 }
 
 .card.monster-card.pumper {
-    background-image: linear-gradient(45deg, #9333EA, #A855F7);
-    border-color: #A855F7;
+    background-image: linear-gradient(45deg, #805AD5, #9F7AEA);
+    border-color: #B794F4;
 }
 
 .card.monster-card.all-rounder {
-    background-image: linear-gradient(45deg, #B91C1C, #EF4444);
-    border-color: #EF4444;
+    background-image: linear-gradient(45deg, #C53030, #F56565);
+    border-color: #FC8181;
 }
 
 .card.monster-card.champion {
-    background-image: linear-gradient(45deg, #D97706, #F59E0B);
-    border-color: #FBBF24;
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.7);
+    background-image: linear-gradient(45deg, #C05621, #ED8936);
+    border-color: #F6AD55;
+    box-shadow: 0 0 10px rgba(246, 173, 85, 0.7);
 }
 
 /* Badge per il tipo di mostro */
 .card-class {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 3px;
+    right: 3px;
     font-size: 0.7em;
     padding: 2px 4px;
     border-radius: 4px;
     background-color: rgba(0, 0, 0, 0.5);
-    color: #F9FAFB;
+    color: #F7FAFC;
 }
 
 /* Stili per gli effetti delle carte */
 .card-effect {
     position: absolute;
-    bottom: 4px;
-    left: 4px;
-    right: 4px;
+    bottom: 3px;
+    left: 3px;
+    right: 3px;
     font-size: 0.7em;
     padding: 2px;
     background-color: rgba(0, 0, 0, 0.7);
@@ -1108,46 +1342,35 @@ h1 {
 .card:hover .card-effect {
     opacity: 1;
     white-space: normal;
-    max-height: 80px;
+    max-height: 75px;
     overflow-y: auto;
     z-index: 10;
-}
-
-/* Migliora lo stile delle carte spell */
-.card.spell-card {
-    background-image: linear-gradient(45deg, #4F46E5, #818CF8);
-    border-color: #818CF8;
-}
-
-.card.spell-card .card-desc {
-    font-size: 0.75em;
-    line-height: 1.2;
-    margin-top: 5px;
 }
 
 /* Indicatore dell'azione selezionata */
 .action-indicator {
     position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background-color: rgba(15, 23, 42, 0.8);
+    bottom: 4px;
+    right: 4px;
+    background-color: rgba(26, 32, 44, 0.8);
     color: white;
-    padding: 2px 5px;
+    padding: 2px 4px;
     border-radius: 4px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     z-index: 5;
+    font-weight: 600;
 }
 
 .action-indicator.attack-action {
-    background-color: rgba(220, 38, 38, 0.8);
+    background-color: rgba(197, 48, 48, 0.8);
 }
 
 .action-indicator.defend-action {
-    background-color: rgba(37, 99, 235, 0.8);
+    background-color: rgba(43, 108, 176, 0.8);
 }
 
 .action-indicator.pump-action {
-    background-color: rgba(139, 92, 246, 0.8);
+    background-color: rgba(128, 90, 213, 0.8);
 }
 
 /* Animazioni di combattimento */
@@ -1155,12 +1378,12 @@ h1 {
     position: fixed;
     width: 30px;
     height: 5px;
-    background-color: rgba(239, 68, 68, 0.8);
+    background-color: rgba(245, 101, 101, 0.8);
     border-radius: 2px;
     z-index: 150;
     pointer-events: none;
     transform-origin: left center;
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 10px rgba(245, 101, 101, 0.7);
 }
 
 .attack-animation.attack-start {
@@ -1207,17 +1430,17 @@ h1 {
 @keyframes hit-impact {
     0% {
         transform: scale(1);
-        box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+        box-shadow: 0 0 0 rgba(245, 101, 101, 0);
     }
 
     50% {
         transform: scale(1.05);
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        box-shadow: 0 0 20px rgba(245, 101, 101, 0.8);
     }
 
     100% {
         transform: scale(1);
-        box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+        box-shadow: 0 0 0 rgba(245, 101, 101, 0);
     }
 }
 
@@ -1235,13 +1458,13 @@ h1 {
 }
 
 .monster-slot:not(.empty):hover .card {
-    box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+    box-shadow: 0 0 10px rgba(246, 173, 85, 0.6);
 }
 
 /* Stili per le carte nascoste dell'avversario */
 .card.hidden-monster {
-    background-image: linear-gradient(45deg, #334155, #475569);
-    border-color: #94A3B8;
+    background-image: linear-gradient(45deg, #2D3748, #4A5568);
+    border-color: #A0AEC0;
     position: relative;
     overflow: hidden;
 }
@@ -1265,17 +1488,17 @@ h1 {
     position: relative;
     z-index: 2;
     font-weight: 600;
-    color: #E2E8F0;
+    color: #EDF2F7;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
 .card.revealed {
-    animation: card-reveal 1s ease-in-out;
+    animation: card-reveal 0.8s ease-in-out;
 }
 
 @keyframes card-reveal {
@@ -1322,21 +1545,21 @@ h1 {
 }
 
 .battle-resolution-popup>div {
-    background-color: #1E293B;
-    border-radius: 16px;
-    border: 2px solid #7C3AED;
+    background: linear-gradient(135deg, rgba(44, 55, 72, 0.95), rgba(26, 32, 44, 0.95));
+    border-radius: 12px;
+    border: 2px solid #ED8936;
     width: 80%;
-    max-width: 800px;
+    max-width: 700px;
     max-height: 80vh;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 .battle-popup-header {
-    background: linear-gradient(to right, #7C3AED, #6D28D9);
-    padding: 15px 20px;
+    background: linear-gradient(to right, #ED8936, #DD6B20);
+    padding: 12px 18px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1346,19 +1569,33 @@ h1 {
 .battle-popup-header h2 {
     color: white;
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 600;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .battle-popup-content {
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
     flex-grow: 1;
 }
 
+.battle-popup-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.battle-popup-content::-webkit-scrollbar-track {
+    background: rgba(26, 32, 44, 0.5);
+    border-radius: 3px;
+}
+
+.battle-popup-content::-webkit-scrollbar-thumb {
+    background-color: rgba(246, 173, 85, 0.6);
+    border-radius: 3px;
+}
+
 .battle-popup-footer {
-    padding: 15px;
+    padding: 12px;
     display: flex;
     justify-content: center;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -1366,11 +1603,11 @@ h1 {
 }
 
 .battle-popup-close {
-    padding: 10px 30px;
-    background: linear-gradient(to bottom, #7C3AED, #6D28D9);
+    padding: 8px 25px;
+    background: linear-gradient(to bottom, #ED8936, #DD6B20);
     color: white;
     border: none;
-    border-radius: 30px;
+    border-radius: 25px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -1378,7 +1615,7 @@ h1 {
 }
 
 .battle-popup-close:hover {
-    background: linear-gradient(to bottom, #8B5CF6, #7C3AED);
+    background: linear-gradient(to bottom, #F6AD55, #ED8936);
     transform: translateY(-2px);
     box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
 }
@@ -1391,78 +1628,399 @@ h1 {
 .battle-timeline {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
 }
 
 .battle-event {
     display: flex;
-    gap: 15px;
-    background-color: rgba(30, 41, 59, 0.5);
-    border-radius: 10px;
-    padding: 15px;
-    border-left: 4px solid #FFD740;
+    gap: 12px;
+    background-color: rgba(44, 55, 72, 0.5);
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 3px solid #F6AD55;
     transition: all 0.3s;
 }
 
 .battle-event:hover {
-    background-color: rgba(30, 41, 59, 0.8);
+    background-color: rgba(44, 55, 72, 0.8);
     transform: translateX(5px);
+    border-left-color: #ED8936;
 }
 
 .battle-step {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    background-color: #FFD740;
-    color: #1E293B;
+    background-color: #F6AD55;
+    color: #1A202C;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .battle-description {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
 .battle-description p {
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.4;
+    font-size: 0.9em;
 }
 
 .player-1 {
-    color: #60A5FA;
+    color: #90CDF4;
     font-weight: 600;
 }
 
 .player-2 {
-    color: #F87171;
+    color: #FEB2B2;
     font-weight: 600;
 }
 
 .damage {
-    color: #F87171;
+    color: #FEB2B2;
     font-weight: 600;
 }
 
 .destroyed {
-    color: #F87171;
+    color: #FC8181;
     font-weight: 700;
-    margin-top: 5px !important;
+    margin-top: 4px !important;
     animation: pulse-text 1s infinite alternate;
 }
 
 @keyframes pulse-text {
     from {
-        opacity: 0.7;
+        opacity: 0.8;
     }
 
     to {
         opacity: 1;
-        text-shadow: 0 0 10px rgba(248, 113, 113, 0.7);
+        text-shadow: 0 0 8px rgba(252, 129, 129, 0.7);
     }
+}
+
+/* Animazione per carte che ritornano in mano */
+@keyframes return-to-hand {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(0.8) translateY(-20px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0.5) translateY(-80px);
+    }
+}
+
+.returning-to-hand {
+    animation: return-to-hand 0.7s forwards;
+    pointer-events: none;
+    position: absolute;
+    z-index: 100;
+}
+
+/* Animazione per nuove carte aggiunte alla mano */
+@keyframes appear-in-hand {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.hand .card.new-card {
+    animation: appear-in-hand 0.5s forwards;
+}
+
+/* Adjust card stats for better readability */
+.monster-card .card-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.9em;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-top: 5px;
+}
+
+.monster-card .stat {
+    margin: 0 2px;
+}
+
+.monster-card .stat.atk {
+    color: #FC8181;
+}
+
+.monster-card .stat.def {
+    color: #90CDF4;
+}
+
+.monster-card .stat.spd {
+    color: #9AE6B4;
+}
+
+/* Make cards more readable */
+.card .card-name {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #F7FAFC;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Improve the game board layout */
+.game-board {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    justify-content: space-between;
+}
+
+/* Game phase centered control bar */
+.game-phase-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, rgba(44, 55, 72, 0.7), rgba(26, 32, 44, 0.7));
+    border-radius: 10px;
+    padding: 10px 20px;
+    margin: 10px auto;
+    border: 2px solid rgba(246, 173, 85, 0.4);
+    width: 70%;
+    max-width: 800px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.game-phase {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #FBD38D;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-timer {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #4FD1C5;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.phase-end-button {
+    padding: 8px 20px;
+    background: linear-gradient(to bottom, #ED8936, #DD6B20);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.phase-end-button:hover {
+    background: linear-gradient(to bottom, #F6AD55, #ED8936);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Style for card stats on board */
+.monster-slot .card .card-stats,
+.spell-slot .card .card-stats {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    font-size: 0.85em;
+    margin-top: auto;
+}
+
+/* Resources (deck/discard) styling */
+.resources {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.resource {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.resource-icon {
+    width: 60px;
+    height: 80px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #553C9A, #805AD5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #F7FAFC;
+    font-weight: bold;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.resource-icon:hover {
+    transform: translateY(-3px) rotateY(-10deg);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.resource-count {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #F7FAFC;
+}
+
+/* Important phase info box adjustments */
+.phase-info-sidebar {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    width: 250px;
+    background: rgba(26, 32, 44, 0.9);
+    border-radius: 10px;
+    border: 2px solid #ED8936;
+    padding: 12px;
+    color: white;
+    font-size: 0.9em;
+    line-height: 1.4;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.phase-info-sidebar h3 {
+    color: #F6AD55;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 1.1em;
+    border-bottom: 1px solid rgba(246, 173, 85, 0.4);
+    padding-bottom: 5px;
+}
+
+.phase-info-sidebar ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.phase-info-sidebar li {
+    margin-bottom: 5px;
+    position: relative;
+    padding-left: 15px;
+}
+
+.phase-info-sidebar li:before {
+    content: "•";
+    color: #F6AD55;
+    position: absolute;
+    left: 0;
+}
+
+/* Better buttons for deck and discard */
+.resource-button {
+    background: linear-gradient(to bottom, #553C9A, #6B46C1);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 85px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.resource-button:hover {
+    background: linear-gradient(to bottom, #6B46C1, #805AD5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.resource-count {
+    display: block;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 700;
+    margin-top: 5px;
+}
+
+/* Game controls with proper sizing */
+.game-controls {
+    padding: 10px 20px;
+    margin: 3px auto;
+}
+
+/* Important centered phase bar styling */
+.phase-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, rgba(15, 23, 42, 0.7), rgba(237, 137, 54, 0.25), rgba(15, 23, 42, 0.7));
+    border-radius: 40px;
+    border: 2px solid #ED8936;
+    padding: 8px 20px;
+    width: max-content;
+    margin: 8px auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.phase-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #F6AD55;
+    margin-right: 20px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.timer-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #4FD1C5;
+    margin: 0 20px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.end-button {
+    background: linear-gradient(to bottom, #ED8936, #DD6B20);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 7px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    margin-left: 20px;
+}
+
+.end-button:hover {
+    background: linear-gradient(to bottom, #F6AD55, #ED8936);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
 }

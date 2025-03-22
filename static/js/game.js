@@ -490,7 +490,7 @@ const gameState = {
     },
 
     // Aggiorna l'UI delle carte in mano del giocatore 1 (umano)
-    updatePlayer1CardsUI: function () {
+    updatePlayer1CardsUI: function (isCardReturned = false) {
         const p1Hand = document.querySelector('.player-area.user .hand');
         if (p1Hand) {
             // Svuota la mano attuale
@@ -500,6 +500,12 @@ const gameState = {
             this.players[PLAYERS.PLAYER1].hand.forEach((monster, index) => {
                 const monsterCard = document.createElement('div');
                 monsterCard.className = 'card monster-card';
+
+                // Aggiungi classe per animazione se è una carta ritornata in mano
+                if (isCardReturned && index === this.players[PLAYERS.PLAYER1].hand.length - 1) {
+                    monsterCard.classList.add('new-card');
+                }
+
                 monsterCard.setAttribute('draggable', 'true');
                 monsterCard.setAttribute('data-card-type', 'monster');
                 monsterCard.setAttribute('data-card-id', `monster-${index}`);
@@ -856,6 +862,67 @@ const gameState = {
                     showNotification(`Computer places a monster`, 'info');
                 }
             }
+            // Se c'è già un mostro ma non ha combattuto, possiamo sostituirlo
+            else if (this.players[PLAYERS.PLAYER2].board[position] && !this.players[PLAYERS.PLAYER2].monstersHaveFought[position]) {
+                // Cerca un mostro nella mano
+                const monsterIndex = computerHand.findIndex(card => card.class); // Solo le carte mostro hanno class
+
+                if (monsterIndex >= 0) {
+                    // Salva il mostro esistente
+                    const existingMonster = this.players[PLAYERS.PLAYER2].board[position];
+
+                    // Rimetti il mostro esistente nella mano
+                    if (existingMonster) {
+                        // Aggiungi animazione visiva per il ritorno in mano
+                        const slot = document.querySelector(`.player-area.opponent .monster-slot[data-position="${position}"]`);
+                        if (slot && slot.querySelector('.card')) {
+                            const cardElement = slot.querySelector('.card');
+                            const cardRect = cardElement.getBoundingClientRect();
+
+                            // Crea un clone per l'animazione
+                            const cardClone = cardElement.cloneNode(true);
+                            cardClone.style.position = 'fixed';
+                            cardClone.style.top = `${cardRect.top}px`;
+                            cardClone.style.left = `${cardRect.left}px`;
+                            cardClone.style.width = `${cardRect.width}px`;
+                            cardClone.style.height = `${cardRect.height}px`;
+                            cardClone.classList.add('returning-to-hand');
+                            document.body.appendChild(cardClone);
+
+                            // Determina la destinazione dell'animazione (mano dell'avversario)
+                            const oppHand = document.querySelector('.player-area.opponent .hand');
+                            const handRect = oppHand.getBoundingClientRect();
+                            cardClone.style.transition = 'all 0.8s ease-out';
+
+                            // Anima verso la mano
+                            setTimeout(() => {
+                                cardClone.style.top = `${handRect.top}px`;
+                                cardClone.style.left = `${handRect.left + 50}px`;
+                                cardClone.style.transform = 'scale(0.5) rotate(10deg)';
+                                cardClone.style.opacity = '0.7';
+                            }, 10);
+
+                            // Rimuovi il clone dopo l'animazione
+                            setTimeout(() => {
+                                cardClone.remove();
+                            }, 800);
+                        }
+
+                        computerHand.push(existingMonster);
+                        logGameEvent(`Computer returns ${existingMonster.name} from position ${position} to hand`);
+                    }
+
+                    // Posiziona il nuovo mostro
+                    const monster = computerHand.splice(monsterIndex, 1)[0];
+                    this.players[PLAYERS.PLAYER2].board[position] = monster;
+
+                    // Aggiorna l'UI
+                    this.updateComputerBoardUI(position, monster);
+
+                    logGameEvent(`Computer replaces monster with ${monster.name} in position ${position}`);
+                    showNotification(`Computer replaces a monster`, 'info');
+                }
+            }
         }
 
         // Posiziona magie nelle posizioni vuote, ma non nella champion lane
@@ -878,6 +945,67 @@ const gameState = {
 
                     logGameEvent(`Computer places a spell in position ${position}`);
                     showNotification(`Computer places a spell`, 'info');
+                }
+            }
+            // Se c'è già una magia, possiamo sostituirla
+            else if (this.players[PLAYERS.PLAYER2].spells[position]) {
+                // Cerca una magia nella mano
+                const spellIndex = computerHand.findIndex(card => !card.class); // Le carte magia non hanno class
+
+                if (spellIndex >= 0) {
+                    // Salva la magia esistente
+                    const existingSpell = this.players[PLAYERS.PLAYER2].spells[position];
+
+                    // Rimetti la magia esistente nella mano
+                    if (existingSpell) {
+                        // Aggiungi animazione visiva per il ritorno in mano
+                        const slot = document.querySelector(`.player-area.opponent .spell-slot[data-position="${position}"]`);
+                        if (slot && slot.querySelector('.card')) {
+                            const cardElement = slot.querySelector('.card');
+                            const cardRect = cardElement.getBoundingClientRect();
+
+                            // Crea un clone per l'animazione
+                            const cardClone = cardElement.cloneNode(true);
+                            cardClone.style.position = 'fixed';
+                            cardClone.style.top = `${cardRect.top}px`;
+                            cardClone.style.left = `${cardRect.left}px`;
+                            cardClone.style.width = `${cardRect.width}px`;
+                            cardClone.style.height = `${cardRect.height}px`;
+                            cardClone.classList.add('returning-to-hand');
+                            document.body.appendChild(cardClone);
+
+                            // Determina la destinazione dell'animazione (mano dell'avversario)
+                            const oppHand = document.querySelector('.player-area.opponent .hand');
+                            const handRect = oppHand.getBoundingClientRect();
+                            cardClone.style.transition = 'all 0.8s ease-out';
+
+                            // Anima verso la mano
+                            setTimeout(() => {
+                                cardClone.style.top = `${handRect.top}px`;
+                                cardClone.style.left = `${handRect.left + 50}px`;
+                                cardClone.style.transform = 'scale(0.5) rotate(10deg)';
+                                cardClone.style.opacity = '0.7';
+                            }, 10);
+
+                            // Rimuovi il clone dopo l'animazione
+                            setTimeout(() => {
+                                cardClone.remove();
+                            }, 800);
+                        }
+
+                        computerHand.push(existingSpell);
+                        logGameEvent(`Computer returns spell from position ${position} to hand`);
+                    }
+
+                    // Posiziona la nuova magia
+                    const spell = computerHand.splice(spellIndex, 1)[0];
+                    this.players[PLAYERS.PLAYER2].spells[position] = spell;
+
+                    // Aggiorna l'UI
+                    this.updateComputerSpellUI(position);
+
+                    logGameEvent(`Computer replaces spell in position ${position}`);
+                    showNotification(`Computer replaces a spell`, 'info');
                 }
             }
         }
@@ -2320,17 +2448,22 @@ const gameState = {
 
         if (!card) return;
 
-        // Aggiungi carta al cimitero
-        this.players[player].graveyard.push(card);
+        // Aggiungi carta al cimitero solo quando siamo in Battle Phase
+        if (this.currentPhase === PHASES.BATTLE) {
+            this.players[player].graveyard.push(card);
+
+            // Aggiorna il contatore del cimitero
+            const graveyardCount = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .graveyard .count`);
+            if (graveyardCount) {
+                graveyardCount.textContent = this.players[player].graveyard.length.toString();
+            }
+
+            logGameEvent(`Player ${player + 1}'s ${card.name} was destroyed and sent to the graveyard.`);
+            showNotification(`${card.name} was destroyed!`, 'warning');
+        }
 
         // Rimuovi carta dal campo
         this.players[player].board[position] = null;
-
-        // Aggiorna il contatore del cimitero
-        const graveyardCount = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .graveyard .count`);
-        if (graveyardCount) {
-            graveyardCount.textContent = this.players[player].graveyard.length.toString();
-        }
 
         // Rimuovi la carta dall'interfaccia
         const slot = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .monster-slot[data-position="${position}"]`);
@@ -2338,9 +2471,6 @@ const gameState = {
             slot.innerHTML = "Monster";
             slot.classList.add('empty');
         }
-
-        logGameEvent(`Player ${player + 1}'s ${card.name} was destroyed and sent to the graveyard.`);
-        showNotification(`${card.name} was destroyed!`, 'warning');
     },
 
     // Applica danno a una lane
@@ -3575,6 +3705,70 @@ function setupDragAndDrop() {
 
         // Verifica se il tipo di carta è compatibile con lo slot
         if (cardType === slotType) {
+            // Riferimento alla carta esistente (se presente)
+            const existingCard = this.querySelector('.card');
+            let existingCardData = null;
+            const slotElement = this; // Salva il riferimento allo slot
+
+            // Se stiamo sostituendo una carta esistente, salvala per rimetterla nella mano
+            if (existingCard) {
+                const playerIndex = gameState.activePlayer;
+
+                // Crea una copia visiva della carta per l'animazione di ritorno in mano
+                const cardRect = existingCard.getBoundingClientRect();
+                const cardClone = existingCard.cloneNode(true);
+                cardClone.style.position = 'fixed';
+                cardClone.style.top = `${cardRect.top}px`;
+                cardClone.style.left = `${cardRect.left}px`;
+                cardClone.style.width = `${cardRect.width}px`;
+                cardClone.style.height = `${cardRect.height}px`;
+                cardClone.classList.add('returning-to-hand');
+                document.body.appendChild(cardClone);
+
+                // Calcola la posizione finale dell'animazione (verso la mano del giocatore)
+                const hand = document.querySelector('.player-area.user .hand');
+                const handRect = hand.getBoundingClientRect();
+                cardClone.style.transition = 'all 0.8s ease-out';
+
+                // Anima la carta verso la mano
+                setTimeout(() => {
+                    cardClone.style.top = `${handRect.top}px`;
+                    cardClone.style.left = `${handRect.left + 50}px`;
+                    cardClone.style.transform = 'scale(0.5) rotate(10deg)';
+                    cardClone.style.opacity = '0.7';
+                }, 10);
+
+                // Rimuovi il clone dopo l'animazione
+                setTimeout(() => {
+                    cardClone.remove();
+                }, 800);
+
+                if (cardType === 'monster' && slotType === 'monster') {
+                    existingCardData = gameState.players[playerIndex].board[position];
+
+                    // Rimuoviamo la carta dal campo prima di aggiungere quella nuova
+                    gameState.players[playerIndex].board[position] = null;
+                } else if (cardType === 'spell' && slotType === 'spell') {
+                    existingCardData = gameState.players[playerIndex].spells[position];
+
+                    // Rimuoviamo la carta dal campo prima di aggiungere quella nuova
+                    gameState.players[playerIndex].spells[position] = null;
+                }
+
+                // Aggiungiamo la carta rimossa alla mano del giocatore
+                if (existingCardData) {
+                    gameState.players[playerIndex].hand.push(existingCardData);
+                    logGameEvent(`Player ${playerIndex + 1}'s ${cardType} returned to hand from position ${position + 1}`);
+                    showNotification(`${cardType.charAt(0).toUpperCase() + cardType.slice(1)} card returned to your hand`, "info");
+
+                    // Aggiorna l'UI della mano del giocatore con animazione dopo che l'animazione
+                    // di ritorno è quasi completa per un effetto fluido
+                    setTimeout(() => {
+                        gameState.updatePlayer1CardsUI(true); // Passa true per indicare che è una carta ritornata
+                    }, 600);
+                }
+            }
+
             // Crea una copia della carta e inseriscila nello slot
             const cardClone = window.draggedElement.cloneNode(true);
 
