@@ -294,11 +294,147 @@ const gameState = {
     ],
     pendingActions: [], // Azioni in attesa per la Battle Phase
 
+    // Salva lo stato del gioco nel localStorage
+    saveState: function () {
+        // Crea un oggetto per lo stato che possiamo salvare
+        const stateToSave = {
+            currentPhase: this.currentPhase,
+            currentTurn: this.currentTurn,
+            activePlayer: this.activePlayer,
+            timeRemaining: this.timeRemaining,
+            players: JSON.parse(JSON.stringify(this.players)), // Deep copy
+            pendingActions: JSON.parse(JSON.stringify(this.pendingActions))
+        };
+
+        // Salva lo stato nel localStorage
+        localStorage.setItem('gameState', JSON.stringify(stateToSave));
+        logGameEvent('Game state saved to localStorage');
+    },
+
+    // Carica lo stato dal localStorage
+    loadState: function () {
+        const savedState = localStorage.getItem('gameState');
+
+        if (savedState) {
+            const parsedState = JSON.parse(savedState);
+
+            // Ripristina lo stato del gioco
+            this.currentPhase = parsedState.currentPhase;
+            this.currentTurn = parsedState.currentTurn;
+            this.activePlayer = parsedState.activePlayer;
+            this.timeRemaining = parsedState.timeRemaining;
+            this.players = parsedState.players;
+            this.pendingActions = parsedState.pendingActions;
+
+            // Aggiorna l'interfaccia utente
+            this.updateUI();
+
+            logGameEvent('Game state loaded from localStorage');
+            return true;
+        }
+
+        logGameEvent('No saved game state found');
+        return false;
+    },
+
+    // Cancella lo stato salvato
+    clearSavedState: function () {
+        localStorage.removeItem('gameState');
+        logGameEvent('Saved game state cleared');
+    },
+
+    // Aggiorna l'interfaccia utente in base allo stato attuale
+    updateUI: function () {
+        // Aggiorna la fase
+        updatePhaseIndicator(this.currentPhase);
+
+        // Aggiorna il turno
+        document.querySelector('.turn-info').textContent = `Turn: ${this.currentTurn}`;
+
+        // Aggiorna il giocatore attivo
+        document.querySelector('.active-player').textContent = `Active Player: Player ${this.activePlayer + 1}`;
+
+        // Aggiorna le lane
+        this.updateLaneLabels();
+
+        // Aggiorna il campo di gioco
+        this.updateBoardUI();
+
+        // Aggiorna conteggi mazzo e cimitero
+        this.updateDeckAndGraveyardCounts();
+    },
+
+    // Aggiorna il campo di gioco
+    updateBoardUI: function () {
+        // Aggiorna le carte sul campo per entrambi i giocatori
+        for (let player = 0; player < 2; player++) {
+            for (let position = 0; position < 3; position++) {
+                const card = this.players[player].board[position];
+                const spell = this.players[player].spells[position];
+
+                // Aggiorna slot mostri
+                const monsterSlot = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .monster-slot[data-position="${position}"]`);
+                if (monsterSlot) {
+                    if (card) {
+                        monsterSlot.innerHTML = `
+                            <div class="card monster-card">
+                                ${card.name}
+                                <div class="card-stats">
+                                    ATK: ${card.attack}<br>DEF: ${card.defense}<br>SPD: ${card.speed}
+                                </div>
+                            </div>
+                        `;
+                        monsterSlot.classList.remove('empty');
+                    } else {
+                        monsterSlot.innerHTML = "Monster";
+                        monsterSlot.classList.add('empty');
+                    }
+                }
+
+                // Aggiorna slot spell
+                const spellSlot = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .spell-slot[data-position="${position}"]`);
+                if (spellSlot) {
+                    if (spell) {
+                        spellSlot.innerHTML = `
+                            <div class="card spell-card">
+                                ${spell.name}
+                                <div class="card-desc">${spell.description}</div>
+                            </div>
+                        `;
+                        spellSlot.classList.remove('empty');
+                    } else {
+                        spellSlot.innerHTML = "Spell";
+                        spellSlot.classList.add('empty');
+                    }
+                }
+            }
+        }
+    },
+
+    // Aggiorna conteggi mazzo e cimitero
+    updateDeckAndGraveyardCounts: function () {
+        for (let player = 0; player < 2; player++) {
+            const deckCount = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .deck .count`);
+            const graveyardCount = document.querySelector(`.player-area.${player === PLAYERS.PLAYER1 ? 'user' : 'opponent'} .graveyard .count`);
+
+            if (deckCount) {
+                deckCount.textContent = this.players[player].deck.length.toString();
+            }
+
+            if (graveyardCount) {
+                graveyardCount.textContent = this.players[player].graveyard.length.toString();
+            }
+        }
+    },
+
     // Inizializza il gioco
     initialize: function () {
-        // Per ora simuliamo solo il flusso di gioco senza implementare la logica completa
-        logGameEvent('Game initialized. Starting with setup phase.');
-        this.setupGame();
+        // Prova a caricare uno stato salvato
+        if (!this.loadState()) {
+            // Se non c'è uno stato salvato, inizializza un nuovo gioco
+            logGameEvent('Game initialized. Starting with setup phase.');
+            this.setupGame();
+        }
     },
 
     // Setup iniziale del gioco
@@ -2817,12 +2953,16 @@ const gameState = {
         if (this.players[PLAYERS.PLAYER1].lanes[1] <= 0) {
             // Giocatore 1 ha perso
             this.winner = PLAYERS.PLAYER2;
+            // Cancella lo stato salvato dopo la fine della partita
+            this.clearSavedState();
             return true;
         }
 
         if (this.players[PLAYERS.PLAYER2].lanes[1] <= 0) {
             // Giocatore 2 ha perso
             this.winner = PLAYERS.PLAYER1;
+            // Cancella lo stato salvato dopo la fine della partita
+            this.clearSavedState();
             return true;
         }
 
@@ -2957,6 +3097,32 @@ const gameState = {
 
         // Altrimenti può essere sostituito
         return true;
+    },
+
+    // Passa al turno successivo 
+    nextTurn: function () {
+        // Incrementa il turno
+        this.currentTurn++;
+        logGameEvent(`Turn ${this.currentTurn} starts.`);
+
+        // Aggiorna l'indicatore del turno
+        document.querySelector('.turn-info').textContent = `Turn: ${this.currentTurn}`;
+
+        // Cambia il giocatore attivo
+        this.activePlayer = this.activePlayer === PLAYERS.PLAYER1 ? PLAYERS.PLAYER2 : PLAYERS.PLAYER1;
+        document.querySelector('.active-player').textContent = `Active Player: Player ${this.activePlayer + 1}`;
+
+        // Resetta gli stati delle azioni
+        for (let player = 0; player < 2; player++) {
+            this.players[player].selectedActions = [null, null, null];
+            this.players[player].monstersHaveFought = [false, false, false];
+        }
+
+        // Entra nella fase di pesca
+        this.enterDrawPhase();
+
+        // Salva lo stato dopo ogni cambio di turno
+        this.saveState();
     }
 };
 
@@ -3943,3 +4109,32 @@ foughtMonsterStyles.textContent = `
     }
 `;
 document.head.appendChild(foughtMonsterStyles);
+
+// Funzione per aggiornare l'indicatore della fase
+function updatePhaseIndicator(phase) {
+    const phaseIndicator = document.querySelector('.phase-indicator');
+    if (phaseIndicator) {
+        let phaseName = 'Unknown';
+
+        switch (phase) {
+            case PHASES.SETUP:
+                phaseName = 'Setup';
+                break;
+            case PHASES.DRAW:
+                phaseName = 'Draw';
+                break;
+            case PHASES.STRATEGY:
+                phaseName = 'Strategy';
+                break;
+            case PHASES.BATTLE:
+                phaseName = 'Battle';
+                break;
+            case PHASES.END:
+                phaseName = 'End';
+                break;
+        }
+
+        phaseIndicator.textContent = `Phase: ${phaseName}`;
+    }
+}
+
