@@ -1,9 +1,11 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'tridimensional-duels-secret'
-socketio = SocketIO(app)
+CORS(app)  # Enable CORS for all routes
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/')
 def index():
@@ -37,6 +39,9 @@ def handle_card_action(data):
     # Riceve notifiche di azioni sulle carte e le ritrasmette
     print(f"Card action: {data['action']} on {data['card_id']}")
     socketio.emit('action_update', data)
+
+# This is for Vercel serverless functions
+app.wsgi_app = socketio.wsgi_app
 
 if __name__ == '__main__':
     socketio.run(app, debug=True) 
